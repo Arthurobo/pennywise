@@ -57,7 +57,7 @@ and any setup where launching a browser is awkward.
 ./pennywise        # starts the server
 ```
 
-Visit `http://127.0.0.1:9001/setup` and fill in the same fields. After submit,
+Visit `http://127.0.0.1:9002/setup` and fill in the same fields. After submit,
 you're auto-logged-in and redirected to the dashboard.
 
 Either path produces identical DB state. After the owner exists:
@@ -72,47 +72,79 @@ Either path produces identical DB state. After the owner exists:
 
 ## Day-to-day: starting and stopping Pennywise
 
-Once the owner is created, you have two ways to run the server:
-
-### Foreground (development, systemd)
+Once the owner is created, the recommended path is the OS service:
 
 ```sh
-./pennywise          # blocks; Ctrl+C to stop
-./pennywise serve    # explicit form of the same
+pennywise start    # install service + run; auto-starts at every login + reboot
+pennywise status   # installed? running? PID, dashboard URL, logs
+pennywise stop     # stop and remove from auto-start
 ```
 
-This is the right mode under any process supervisor (systemd, launchd,
-NSSM) — they handle lifecycle and just want a process to babysit.
+`pennywise start` writes a service definition under your home directory
+(no sudo needed) and registers it with the OS supervisor:
 
-### Background daemon (laptop / single-user installs)
+| Platform | Manager | Service definition |
+|---|---|---|
+| macOS | launchd | `~/Library/LaunchAgents/com.pennywise.app.plist` |
+| Linux | systemd `--user` | `~/.config/systemd/user/pennywise.service` |
+| Windows | Task Scheduler | task `Pennywise` (logon trigger, no admin needed) |
 
-For a personal laptop where you don't want a terminal pinned for the server:
+After install, Pennywise auto-starts at every reboot and self-restarts
+on crash. Re-running `pennywise start` after a binary upgrade
+(`go install ...@latest`) refreshes the service definition and restarts
+the running process — no manual reload step.
+
+Logs at `$PENNYWISE_DATA_DIR/pennywise.log`.
+
+### Linux only: enable user-lingering for true reboot survival
+
+`systemd --user` services run only while the user is interactively logged
+in by default. To make Pennywise come back at boot before any login,
+enable lingering once:
 
 ```sh
-./pennywise start    # forks into the background, writes a PID file,
-                     # confirms /healthz responds before reporting success
-./pennywise status   # PID, uptime, dashboard URL, log path
-./pennywise stop     # graceful SIGTERM, escalates to SIGKILL after 10s
+sudo loginctl enable-linger $USER
 ```
 
-State files (Unix only):
-- `$PENNYWISE_DATA_DIR/pennywise.pid` — PID + start timestamp
-- `$PENNYWISE_DATA_DIR/pennywise.log` — combined stdout+stderr (append-mode)
+`pennywise start` prints a reminder if it detects lingering isn't enabled.
 
-`start` refuses if the PID in the file is still alive. Stale PID files
-(file present but the process is gone — happens after `kill -9` or a hard
-reboot) are detected by `status` and cleaned up by the next `start`.
+### Windows
 
-The lifecycle commands are **Unix only** (Linux, macOS). On Windows, run
-`pennywise serve` under Task Scheduler or NSSM instead.
+`pennywise start` registers a Task Scheduler task that fires at user
+logon, runs as the current user (no admin elevation required), and
+restarts on failure. The task launches a `.bat` script in your data
+dir that exports `PENNYWISE_*` env vars and runs `pennywise serve`,
+redirecting stdout/stderr to `%USERPROFILE%\.pennywise\pennywise.log`.
 
-**Reboot survival:** `pennywise start` does **not** auto-restart the
-server when your machine reboots. For that, use one of the system-service
-options below (systemd on Linux, launchd on macOS).
+`pennywise uninstall` removes the task, the launcher script, the data
+directory, and the installed `.exe` (the `.exe` self-deletion happens
+a moment after the command exits, since Windows locks running
+executables).
 
-## Running as a system service (Linux, systemd)
+### Foreground mode
 
-Save this as `/etc/systemd/system/pennywise.service`:
+```sh
+pennywise          # blocks; Ctrl+C to stop
+pennywise serve    # explicit form of the same
+```
+
+For development, debugging, or running under a different supervisor
+(your own systemd unit, NSSM on Windows, etc.). Bypasses the OS service
+install entirely.
+
+## System-wide install (multi-user host)
+
+The `pennywise start` flow installs a per-user service, which is the
+right answer for personal laptops and single-user VPSes. For a shared
+host where you want a system-wide daemon owned by a dedicated `pennywise`
+user, use a traditional systemd unit:
+
+```sh
+sudo useradd --system --home /var/lib/pennywise --create-home pennywise
+sudo cp ~/go/bin/pennywise /usr/local/bin/
+```
+
+Save as `/etc/systemd/system/pennywise.service`:
 
 ```
 [Unit]
@@ -127,15 +159,13 @@ Restart=on-failure
 RestartSec=5s
 Environment=PENNYWISE_DATA_DIR=/var/lib/pennywise
 Environment=PENNYWISE_HOST=127.0.0.1
-Environment=PENNYWISE_PORT=9001
+Environment=PENNYWISE_PORT=9002
 
 [Install]
 WantedBy=multi-user.target
 ```
 
 ```sh
-sudo useradd --system --home /var/lib/pennywise --create-home pennywise
-sudo cp pennywise /usr/local/bin/
 sudo systemctl enable --now pennywise
 ```
 

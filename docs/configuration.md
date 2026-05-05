@@ -5,9 +5,9 @@ defaults. There are no config files in v1.
 
 | Variable                                  | Default                | Notes                                                               |
 |-------------------------------------------|------------------------|---------------------------------------------------------------------|
-| `PENNYWISE_DATA_DIR`                      | `~/.pennywise`         | Where `pennywise.db` and `secret.key` live. Created if missing.     |
+| `PENNYWISE_DATA_DIR`                      | `~/.pennywise` (or `./dev` when run from a repo checkout) | Where `pennywise.db` and `secret.key` live. Created if missing. When `pennywise` is invoked from a directory whose `go.mod` matches this module's import path — i.e. you're hacking on Pennywise itself — the default flips to `./dev` so the dev DB stays inside the repo and doesn't collide with your real install at `~/.pennywise/`. The startup log line shows `dev_auto_detected=true` whenever this kicks in. Setting `PENNYWISE_ENV=production` or `PENNYWISE_DATA_DIR` explicitly overrides. |
 | `PENNYWISE_HOST`                          | `127.0.0.1`            | Bind address. Set to `0.0.0.0` to listen on all interfaces.         |
-| `PENNYWISE_PORT`                          | `9001`                 | HTTP port.                                                          |
+| `PENNYWISE_PORT`                          | `9002`                 | HTTP port.                                                          |
 | `PENNYWISE_SESSION_SECRET`                | (auto-generated)       | Hex-encoded, ≥32 hex chars. If unset, written to `$DATA_DIR/secret.key` (`0600`) on first run. |
 | `PENNYWISE_LOG_LEVEL`                     | `info`                 | `debug`, `info`, `warn`, `error`.                                   |
 | `PENNYWISE_ENV`                           | `production`           | `development` reloads templates from disk on every request.         |
@@ -63,10 +63,10 @@ Pennywise speaks HTTP only. For internet exposure, terminate TLS in front:
 - **Caddy** (zero config):
   ```
   pennywise.example.com {
-    reverse_proxy 127.0.0.1:9001
+    reverse_proxy 127.0.0.1:9002
   }
   ```
-- **nginx**: standard `proxy_pass` to `http://127.0.0.1:9001`. Make sure to
+- **nginx**: standard `proxy_pass` to `http://127.0.0.1:9002`. Make sure to
   forward `X-Forwarded-Proto: https` so cookies set the `Secure` flag.
 
 ## Reset password from the CLI

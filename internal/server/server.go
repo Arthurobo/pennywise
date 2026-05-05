@@ -91,7 +91,21 @@ func Run(ctx context.Context, cfg config.Config, vi VersionInfo) error {
 
 	errCh := make(chan error, 1)
 	go func() {
-		slog.Info("pennywise starting", "addr", cfg.Addr(), "env", cfg.Env, "version", vi.Version)
+		args := []any{
+			"addr", cfg.Addr(),
+			"env", cfg.Env,
+			"data_dir", cfg.DataDir,
+			"version", vi.Version,
+		}
+		if cfg.DevAutoDetected {
+			// Make the auto-detection visible — anyone running pennywise
+			// from inside the repo checkout should see why their DB
+			// landed in ./.dev. If you ever see this when you didn't
+			// expect it, you `cd`'d somewhere with a go.mod for this
+			// module.
+			args = append(args, "dev_auto_detected", true)
+		}
+		slog.Info("pennywise starting", args...)
 		errCh <- srv.ListenAndServe()
 	}()
 

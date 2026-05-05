@@ -32,23 +32,32 @@ one SQLite file you can copy. No external services. No accounts somewhere else.
 
 ## Quick start
 
-Anywhere with **Go 1.25+** installed (Linux, macOS, Windows, WSL, BSD):
+Anywhere with **Go 1.25+** installed (Linux, macOS, WSL, BSD):
 
 ```sh
 go install github.com/Arthurobo/pennywise/cmd/pennywise@latest
 pennywise init      # interactive: email, password, currency, timezone
-pennywise start     # daemonizes; dashboard at http://127.0.0.1:9001
+pennywise start     # installs as an OS service + starts it
 ```
 
-Then sign in at <http://127.0.0.1:9001/login>.
+Then sign in at <http://127.0.0.1:9002/login>.
+
+`pennywise start` doesn't just launch the server — it installs Pennywise as
+a real OS service so it **auto-starts at every reboot** and restarts itself
+if it crashes. One command, no service-file editing, no platform-specific
+knowledge required:
+
+- **macOS** → launchd LaunchAgent at `~/Library/LaunchAgents/com.pennywise.app.plist`
+- **Linux** → systemd `--user` unit at `~/.config/systemd/user/pennywise.service`
+- **Windows** → Task Scheduler task `Pennywise` triggered at user logon
+
+None of these require admin / sudo — they're all user-scoped.
 
 > `go install` drops the binary in `$GOBIN` (default `~/go/bin`). Make sure
 > that directory is on your `$PATH` so `pennywise` is callable from anywhere.
 
-Your data lives in `~/.pennywise/pennywise.db` by default; override via
-[`PENNYWISE_DATA_DIR`](docs/configuration.md). The `start` command is Unix
-only — Windows users run `pennywise serve` foreground or under Task
-Scheduler / NSSM.
+Your data lives in `~/.pennywise/pennywise.db` (or `%USERPROFILE%\.pennywise\pennywise.db`
+on Windows) by default; override via [`PENNYWISE_DATA_DIR`](docs/configuration.md).
 
 ### Build from source
 
@@ -121,28 +130,29 @@ Requires Go 1.25+ and `bash` (the Tailwind CLI is downloaded on first build).
 ## CLI reference
 
 ```
-./pennywise                  # run the server in the foreground (default)
-./pennywise serve            # explicit form of the default
-./pennywise init             # interactive first-run setup
+pennywise                  # run the server in the foreground (default)
+pennywise serve            # explicit form of the default
+pennywise init             # interactive first-run setup
 
-# Background lifecycle (Unix only — laptops, single-user installs):
-./pennywise start            # daemonize, write PID file, /healthz check
-./pennywise stop             # graceful SIGTERM, escalates to SIGKILL after 10s
-./pennywise status           # PID, uptime, dashboard URL, log path
+# OS service lifecycle (Linux / macOS / Windows):
+pennywise start            # install service + start; survives reboot
+pennywise stop             # stop and remove from auto-start
+pennywise status           # installed? running? PID, dashboard URL, logs
 
-./pennywise reset-password   # reset the owner password (revokes sessions)
-./pennywise version          # print build info
+pennywise update           # `go install` latest + restart service to use it
+pennywise uninstall        # permanently remove Pennywise (service + data + binary)
+pennywise reset-password   # reset the owner password (revokes sessions)
+pennywise version          # print build info
 ```
 
-DB migrations run **automatically** every time Pennywise opens the database —
-on every `start`, `serve`, `init`, and `reset-password`. There's no separate
-`migrate` command; you never need to think about schema versions.
+`pennywise start` writes a LaunchAgent (`~/Library/LaunchAgents/com.pennywise.app.plist`
+on macOS) or systemd `--user` unit (`~/.config/systemd/user/pennywise.service`
+on Linux). Re-running `pennywise start` after a binary upgrade refreshes the
+service definition automatically — no manual reload step.
 
-For long-lived servers, prefer **systemd** (Linux) or **launchd** (macOS)
-over `start`/`stop` — they restart on crash and at boot. The lifecycle
-commands exist for laptop / single-user installs where setting up an init
-system is overkill. See
-[`docs/installation.md`](docs/installation.md#running-as-a-system-service-linux-systemd).
+DB migrations run **automatically** every time Pennywise opens the database
+— on every `start`, `serve`, `init`, and `reset-password`. There's no
+separate `migrate` command; you never need to think about schema versions.
 
 ## Backup & restore
 

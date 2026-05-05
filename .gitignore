@@ -16,6 +16,11 @@ pennywise.pid
 pennywise.pid.tmp
 pennywise.log
 
+# Dev data dir — when running `./pennywise` from inside this repo,
+# config.Load defaults DataDir to ./dev so the dev DB lives inside the
+# repo, never colliding with your real install at ~/.pennywise.
+/dev/
+
 # Env files — prevent accidentally committing local secrets.
 .env
 .env.*

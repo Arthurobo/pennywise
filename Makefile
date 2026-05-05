@@ -1,4 +1,4 @@
-.PHONY: help build run dev test lint sqlc tailwind clean
+.PHONY: help build run test lint sqlc tailwind clean
 
 VERSION ?= dev
 COMMIT  := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
@@ -14,11 +14,8 @@ help:
 build: tailwind ## Build the binary for the current platform
 	go build -trimpath -ldflags "$(LDFLAGS)" -o pennywise ./cmd/pennywise
 
-run: build ## Build and run
+run: build ## Build and run (auto-detects dev mode when run from repo root)
 	./pennywise
-
-dev: tailwind ## Run in development mode (templates reload from disk)
-	PENNYWISE_ENV=development go run ./cmd/pennywise
 
 test: ## Run all tests with race detector
 	go test -race -count=1 ./...

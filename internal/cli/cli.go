@@ -45,6 +45,8 @@ func Execute() error {
 		newStatusCommand(),
 		&cobra.Command{Use: "version", Short: "Print version info", Run: runVersion},
 		newInitCommand(),
+		newUpdateCommand(),
+		newUninstallCommand(),
 		&cobra.Command{Use: "reset-password", Short: "Reset the owner password", RunE: runResetPassword},
 	)
 
@@ -154,6 +156,8 @@ func ExecuteWithContext(ctx context.Context) error {
 		newStatusCommand(),
 		&cobra.Command{Use: "version", Short: "Print version info", Run: runVersion},
 		newInitCommand(),
+		newUpdateCommand(),
+		newUninstallCommand(),
 		&cobra.Command{Use: "reset-password", Short: "Reset the owner password", RunE: runResetPassword},
 	)
 	return cmd.ExecuteContext(ctx)

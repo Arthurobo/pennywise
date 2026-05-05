@@ -23,17 +23,29 @@ make tailwind
 
 ## Run in dev mode
 
-`PENNYWISE_ENV=development` reloads templates from disk on every render so you
-don't need to rebuild after editing `.html` files.
-
 ```sh
-make dev
-# or:
-PENNYWISE_ENV=development go run ./cmd/pennywise
+make build      # compiles Tailwind CSS + the Go binary
+./pennywise     # auto-detects you're in the repo, runs in dev mode
 ```
 
-The data directory defaults to `~/.pennywise`. Override with
-`PENNYWISE_DATA_DIR=./data` if you want a project-local sandbox.
+When `pennywise` starts inside a directory whose `go.mod` matches this
+module's import path (`github.com/Arthurobo/pennywise`), it automatically:
+
+- Sets `PENNYWISE_ENV=development` (templates reload from disk on every
+  render so you don't need to rebuild after editing `.html` files)
+- Defaults `PENNYWISE_DATA_DIR` to `./dev` (cwd-relative, gitignored) and
+  `PENNYWISE_PORT` to `9003` (vs prod's `9002`), so
+  the dev DB lives inside the repo and never collides with your real
+  install at `~/.pennywise/pennywise.db`
+
+The startup log shows `dev_auto_detected=true` whenever this kicks in.
+Set `PENNYWISE_ENV=production` or `PENNYWISE_DATA_DIR=...` explicitly to
+override. After Go code changes, `make build && ./pennywise`.
+
+For the fast inner loop without rebuilding the binary every time:
+```sh
+go run ./cmd/pennywise
+```
 
 ## Tests
 
