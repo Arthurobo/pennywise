@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"runtime"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -119,9 +118,6 @@ func runUninstall(cmd *cobra.Command, assumeYes bool) error {
 		switch {
 		case err == nil:
 			fmt.Fprintf(out, "✓ Removed %s\n", binPath)
-			if runtime.GOOS == "windows" {
-				fmt.Fprintln(out, "  (deletion completes a moment after this command exits)")
-			}
 		case errors.Is(err, os.ErrNotExist):
 			// Already gone — idempotent; nothing to log.
 		default:
