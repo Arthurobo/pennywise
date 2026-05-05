@@ -83,9 +83,15 @@ func (s *windowsService) Install(cfg config.Config, binPath string) error {
 	// Stop any running instance from a prior install. Best-effort —
 	// errors here are non-fatal; what matters is the next /create
 	// succeeding.
+	//
+	// We deliberately do NOT `taskkill /im pennywise.exe` here — that
+	// would match (and terminate) THIS very process, since `pennywise
+	// start` is itself running as pennywise.exe. schtasks /end on the
+	// task should already terminate any task-managed instances; orphan
+	// foreground `pennywise serve` instances the user started by hand
+	// are intentionally left alone.
 	_, _ = exec.Command("schtasks.exe", "/end", "/tn", taskName).CombinedOutput()
 	_, _ = exec.Command("schtasks.exe", "/delete", "/tn", taskName, "/f").CombinedOutput()
-	_, _ = exec.Command("taskkill.exe", "/f", "/im", "pennywise.exe").CombinedOutput()
 
 	// Create the task from XML. /f forces overwrite if for some reason
 	// the previous /delete didn't take effect.
@@ -104,10 +110,11 @@ func (s *windowsService) Install(cfg config.Config, binPath string) error {
 }
 
 func (s *windowsService) Uninstall(cfg config.Config) error {
-	// Stop the running task instance + kill any orphan pennywise.exe
-	// that the task launched. taskkill is best-effort.
+	// Stop the running task. schtasks /end terminates the task's
+	// process tree on its own — no separate taskkill needed (and a
+	// `taskkill /im pennywise.exe` would match THIS process, since
+	// `pennywise uninstall` is itself running as pennywise.exe).
 	_, _ = exec.Command("schtasks.exe", "/end", "/tn", taskName).CombinedOutput()
-	_, _ = exec.Command("taskkill.exe", "/f", "/im", "pennywise.exe").CombinedOutput()
 
 	out, err := exec.Command("schtasks.exe", "/delete", "/tn", taskName, "/f").CombinedOutput()
 	if err != nil {

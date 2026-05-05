@@ -33,6 +33,7 @@ func Execute() error {
 	root := &cobra.Command{
 		Use:           "pennywise",
 		Short:         "Pennywise — local-first personal expense tracker",
+		Version:       fmt.Sprintf("%s (commit %s, built %s)", version, commit, buildDate),
 		SilenceUsage:  true,
 		SilenceErrors: false,
 		RunE:          runServe,
@@ -146,6 +147,7 @@ func ExecuteWithContext(ctx context.Context) error {
 	cmd := &cobra.Command{
 		Use:          "pennywise",
 		Short:        "Pennywise — local-first personal expense tracker",
+		Version:      fmt.Sprintf("%s (commit %s, built %s)", version, commit, buildDate),
 		SilenceUsage: true,
 		RunE:         runServe,
 	}
