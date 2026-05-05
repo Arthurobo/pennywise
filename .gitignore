@@ -1,0 +1,48 @@
+# Binaries
+/pennywise
+/pennywise.exe
+/dist/
+/bin/
+
+# Local data (default $PENNYWISE_DATA_DIR is ~/.pennywise; these patterns
+# also cover stray files if a user points DATA_DIR at the repo root).
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+secret.key
+.pennywise/
+pennywise.pid
+pennywise.pid.tmp
+pennywise.log
+
+# Env files — prevent accidentally committing local secrets.
+.env
+.env.*
+!.env.example
+
+# Generated CSS — committed despite being build output, so `go install`
+# from a fresh checkout works without requiring users to run `make tailwind`
+# first. Regenerate with `make tailwind` whenever you change Tailwind
+# config, then commit the new output.
+
+# Vendored Tailwind CLI binary (downloaded by scripts/tailwind.sh)
+/scripts/tailwindcss
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Test + profiling artifacts
+*.test
+*.out
+coverage.html
+*.prof
+
+# Go workspace files (when developing with replace directives locally)
+go.work
+go.work.sum

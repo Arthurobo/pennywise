@@ -1,0 +1,155 @@
+{{define "title"}}{{ .L.Ledger.Name }} — Pennywise{{end}}
+
+{{define "content"}}
+<div class="max-w-6xl mx-auto px-4 py-8 space-y-8">
+  <header class="flex items-end justify-between">
+    <div>
+      <div class="flex items-center gap-3">
+        <h1 class="text-2xl font-semibold tracking-tight">{{ .L.Ledger.Name }}</h1>
+        {{ if eq .L.Ledger.IsArchived 1 }}<span class="badge">Archived</span>{{ end }}
+      </div>
+      {{ if nullStringPresent .L.Ledger.Description }}
+        <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">{{ nullStr .L.Ledger.Description }}</p>
+      {{ end }}
+    </div>
+    <div class="flex gap-2">
+      <a href="/expenses/new?ledger={{ .L.Ledger.ID }}" class="btn-primary">+ Expense in this ledger</a>
+      <a href="/ledgers/{{ .L.Ledger.ID }}/edit" class="btn-secondary">Edit</a>
+    </div>
+  </header>
+
+  <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div class="stat">
+      <span class="stat-label">Spent</span>
+      <span class="stat-value">{{ money .L.Total .CurrencySymbol }}</span>
+    </div>
+    {{ if .L.HasBudget }}
+      <div class="stat">
+        <span class="stat-label">Budget</span>
+        <span class="stat-value">{{ money .L.Budget .CurrencySymbol }}</span>
+        <div class="mt-2 progress-track">
+          <div class="progress-fill {{ .L.StatusClass }}"
+               style="width: {{ if gt .L.PercentUsed 100 }}100{{ else }}{{ .L.PercentUsed }}{{ end }}%"></div>
+        </div>
+        <span class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">{{ .L.PercentUsed }}% used</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Remaining</span>
+        <span class="stat-value">{{ money (int64Sub .L.Budget .L.Total) .CurrencySymbol }}</span>
+      </div>
+    {{ else }}
+      <div class="stat">
+        <span class="stat-label">Expenses</span>
+        <span class="stat-value">{{ .ExpenseCount }}</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Budget</span>
+        <span class="stat-value text-zinc-400">—</span>
+      </div>
+    {{ end }}
+  </section>
+
+  <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="card p-5">
+      <h2 class="font-semibold mb-3">By category</h2>
+      <div class="h-64"><canvas id="ledger-cat"></canvas></div>
+    </div>
+    <div class="card p-5">
+      <h2 class="font-semibold mb-3">Spending over time</h2>
+      <div class="h-64"><canvas id="ledger-time"></canvas></div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="font-semibold mb-3">Expenses</h2>
+    {{ if .Expenses }}
+      <div class="card overflow-hidden">
+        <table class="w-full">
+          <thead class="bg-zinc-50 dark:bg-zinc-900/50">
+            <tr>
+              <th class="table-th">Date</th>
+              <th class="table-th">Spent on</th>
+              <th class="table-th">Category</th>
+              <th class="table-th text-right">Amount</th>
+              <th class="table-th"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {{ range .Expenses }}
+              <tr>
+                <td class="table-td text-zinc-500 dark:text-zinc-400">{{ formatDate .SpentAt $.Owner.Timezone }}</td>
+                <td class="table-td">
+                  <div class="font-medium">{{ .Description }}</div>
+                  {{ if nullStringPresent .Notes }}
+                    <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ truncate (nullStr .Notes) 100 }}</div>
+                  {{ end }}
+                </td>
+                <td class="table-td">
+                  {{ if nullStringPresent .CategoryName }}
+                    <span class="badge"><span class="w-2 h-2 rounded-full" style="background:{{ nullStr .CategoryColor }}"></span>{{ nullStr .CategoryName }}</span>
+                  {{ else }}<span class="text-zinc-400">—</span>{{ end }}
+                </td>
+                <td class="table-td text-right font-medium">{{ money .Amount $.CurrencySymbol }}</td>
+                <td class="table-td text-right"><a href="/expenses/{{ .ID }}/edit" class="nav-link">Edit</a></td>
+              </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
+    {{ else }}
+      <div class="card p-8 text-center text-zinc-500 dark:text-zinc-400">
+        No expenses in this ledger yet.
+      </div>
+    {{ end }}
+  </section>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (typeof Chart === 'undefined') return;
+
+    var catData = {{ .CategoryJSON }};
+    try { catData = JSON.parse(catData); } catch (e) {}
+    var catCtx = document.getElementById('ledger-cat');
+    if (catCtx && Array.isArray(catData) && catData.length > 0) {
+      new Chart(catCtx, {
+        type: 'doughnut',
+        data: {
+          labels: catData.map(function (s) { return s.label; }),
+          datasets: [{
+            data: catData.map(function (s) { return s.value / 100; }),
+            backgroundColor: catData.map(function (s) { return s.color || '#6b7280'; }),
+            borderWidth: 0,
+          }],
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } },
+      });
+    }
+
+    var dailyData = {{ .DailyJSON }};
+    try { dailyData = JSON.parse(dailyData); } catch (e) {}
+    var timeCtx = document.getElementById('ledger-time');
+    if (timeCtx && Array.isArray(dailyData) && dailyData.length > 0) {
+      new Chart(timeCtx, {
+        type: 'line',
+        data: {
+          labels: dailyData.map(function (s) { return s.label; }),
+          datasets: [{
+            data: dailyData.map(function (s) { return s.value / 100; }),
+            borderColor: 'rgb(24, 24, 27)',
+            backgroundColor: 'rgba(24, 24, 27, 0.1)',
+            tension: 0.25,
+            fill: true,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } },
+        },
+      });
+    }
+  });
+</script>
+{{end}}

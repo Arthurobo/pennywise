@@ -1,0 +1,197 @@
+{{define "title"}}{{ if eq .Mode "edit" }}Edit{{ else }}New{{ end }} expense — Pennywise{{end}}
+
+{{define "content"}}
+<div class="max-w-2xl mx-auto px-4 py-8">
+  <h1 class="text-2xl font-semibold tracking-tight mb-6">
+    {{ if eq .Mode "edit" }}Edit expense{{ else }}New expense{{ end }}
+  </h1>
+
+  {{ if .Error }}
+    <div class="alert-error mb-4">{{ .Error }}</div>
+  {{ end }}
+
+  {{ if eq .Mode "new" }}
+    <div id="receipt-zone"
+         class="card p-4 mb-4 border-2 border-dashed border-zinc-300 dark:border-zinc-700
+                hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors">
+      <label for="receipt-input" class="block cursor-pointer text-center py-4">
+        <span class="block text-sm font-medium">📷 Drop a receipt here, or click to browse</span>
+        <span class="block text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+          JPG, PNG, WebP, HEIC, or PDF. Max 10 MB. We'll fill the form below — review before saving.
+        </span>
+        <input id="receipt-input" type="file" class="hidden"
+               accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf">
+      </label>
+      <div id="receipt-status" class="hidden text-sm mt-2 px-2"></div>
+    </div>
+  {{ end }}
+
+  <form action="{{ .FormAction }}" method="post" class="card p-6 space-y-4">
+    <input type="hidden" name="_csrf" value="{{ .CSRFToken }}">
+
+    <div>
+      <label for="amount">Amount</label>
+      <div class="relative">
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">{{ .CurrencySymbol }}</span>
+        <input id="amount" name="amount" required inputmode="decimal" autocomplete="off"
+               class="pl-8" placeholder="0.00"
+               value="{{ if .AmountStr }}{{ .AmountStr }}{{ else if .Expense }}{{ amount .Expense.Amount }}{{ end }}">
+      </div>
+    </div>
+
+    <div>
+      <label for="description">Spent on</label>
+      <input id="description" name="description" required maxlength="255"
+             value="{{ if .DescStr }}{{ .DescStr }}{{ else if .Expense }}{{ .Expense.Description }}{{ end }}">
+    </div>
+
+    <div>
+      <label for="notes">Notes (optional)</label>
+      <textarea id="notes" name="notes" rows="3" maxlength="2000">{{ if .NotesStr }}{{ .NotesStr }}{{ else if .Expense }}{{ nullStr .Expense.Notes }}{{ end }}</textarea>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div>
+        <label for="spent_at">Date</label>
+        <input id="spent_at" name="spent_at" type="date" required
+               value="{{ if .DateStr }}{{ .DateStr }}{{ else }}{{ .DefaultDate }}{{ end }}">
+      </div>
+      <div>
+        <label for="category_id">Category</label>
+        <select id="category_id" name="category_id">
+          <option value="">— None —</option>
+          {{ range .Categories }}
+            <option value="{{ .ID }}"
+              {{ if and $.Expense (nullIntPresent $.Expense.CategoryID) (eq (nullInt $.Expense.CategoryID) .ID) }}selected{{ end }}
+              {{ if eq $.PreselectedCategory (printf "%d" .ID) }}selected{{ end }}
+              {{ if eq $.CategoryID (printf "%d" .ID) }}selected{{ end }}>{{ .Name }}</option>
+          {{ end }}
+        </select>
+      </div>
+      <div>
+        <label for="ledger_id">Ledger</label>
+        <select id="ledger_id" name="ledger_id">
+          <option value="">— None —</option>
+          {{ range .Ledgers }}
+            <option value="{{ .ID }}"
+              {{ if and $.Expense (nullIntPresent $.Expense.LedgerID) (eq (nullInt $.Expense.LedgerID) .ID) }}selected{{ end }}
+              {{ if eq $.PreselectedLedger (printf "%d" .ID) }}selected{{ end }}
+              {{ if eq $.LedgerID (printf "%d" .ID) }}selected{{ end }}>{{ .Name }}</option>
+          {{ end }}
+        </select>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between pt-2">
+      <a href="/expenses" class="nav-link">Cancel</a>
+      <div class="flex gap-2">
+        {{ if eq .Mode "edit" }}
+          <button type="submit" name="_method" value="DELETE"
+                  class="btn-danger"
+                  data-confirm="Delete this expense? It will go to the trash and you can restore it from there.">Delete</button>
+        {{ end }}
+        <button type="submit" class="btn-primary">
+          {{ if eq .Mode "edit" }}Save{{ else }}Create{{ end }}
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+{{ if eq .Mode "new" }}
+<script>
+  // Receipt drop-zone wiring. POSTs the dropped file to /expenses/parse-receipt
+  // (multipart), then slots the JSON response into the form fields. The user
+  // reviews and clicks Save through the normal CreateExpense path.
+  (function () {
+    var zone   = document.getElementById('receipt-zone');
+    var input  = document.getElementById('receipt-input');
+    var status = document.getElementById('receipt-status');
+    if (!zone || !input || !status) return;
+
+    var csrfMeta = document.querySelector('input[name="_csrf"]');
+    var csrf     = csrfMeta ? csrfMeta.value : '';
+
+    function setStatus(kind, msg) {
+      status.hidden = false;
+      status.classList.remove('hidden');
+      status.className = 'text-sm mt-2 px-2 ' + (
+        kind === 'error' ? 'text-red-600 dark:text-red-400' :
+        kind === 'ok'    ? 'text-green-700 dark:text-green-400' :
+                           'text-zinc-600 dark:text-zinc-300'
+      );
+      status.textContent = msg;
+    }
+
+    function fillForm(data) {
+      var amount = document.getElementById('amount');
+      var desc   = document.getElementById('description');
+      var date   = document.getElementById('spent_at');
+      var cat    = document.getElementById('category_id');
+      var led    = document.getElementById('ledger_id');
+      if (amount && data.amount_str)  amount.value = data.amount_str;
+      if (desc   && data.description) desc.value   = data.description;
+      if (date   && data.spent_at)    date.value   = data.spent_at;
+      if (cat    && data.category_id) cat.value    = data.category_id;
+      if (led    && data.ledger_id)   led.value    = data.ledger_id;
+    }
+
+    function upload(file) {
+      if (!file) return;
+      if (file.size > 10 * 1024 * 1024) {
+        setStatus('error', 'That file is larger than 10 MB. Please send a smaller copy.');
+        return;
+      }
+      setStatus('info', '📷 Reading your receipt…');
+      var fd = new FormData();
+      fd.append('receipt', file);
+      fetch('/expenses/parse-receipt', {
+        method: 'POST',
+        headers: { 'X-CSRF-Token': csrf },
+        body: fd,
+      })
+        .then(function (r) { return r.json().catch(function () { return null; }); })
+        .then(function (data) {
+          if (!data) {
+            setStatus('error', "Couldn't read the server response. Please try again.");
+            return;
+          }
+          if (data.ok) {
+            fillForm(data);
+            setStatus('ok', '✅ Filled from receipt — review the fields below and click Create.');
+          } else {
+            setStatus('error', data.message || "Couldn't parse that image.");
+          }
+        })
+        .catch(function () {
+          setStatus('error', "Couldn't reach the server. Please try again.");
+        });
+    }
+
+    input.addEventListener('change', function () {
+      upload(input.files && input.files[0]);
+      // Allow re-uploading the same filename — clearing the input fires
+      // change on next select even when the file is identical.
+      input.value = '';
+    });
+
+    ['dragenter', 'dragover'].forEach(function (ev) {
+      zone.addEventListener(ev, function (e) {
+        e.preventDefault(); e.stopPropagation();
+        zone.classList.add('ring-2', 'ring-blue-400');
+      });
+    });
+    ['dragleave', 'drop'].forEach(function (ev) {
+      zone.addEventListener(ev, function (e) {
+        e.preventDefault(); e.stopPropagation();
+        zone.classList.remove('ring-2', 'ring-blue-400');
+      });
+    });
+    zone.addEventListener('drop', function (e) {
+      var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      upload(f);
+    });
+  })();
+</script>
+{{ end }}
+{{end}}

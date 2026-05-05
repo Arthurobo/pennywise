@@ -1,0 +1,56 @@
+{{/*
+  currency_picker — searchable combobox over the embedded ISO 4217 list.
+
+  Inputs (from the surrounding context):
+    .Currencies    []models.Currency
+    .CurrencyCode  string  (the currently-selected code, may be "")
+
+  Emits a hidden <input name="currency_code"> the form submits, and dispatches
+  a `change` event on it when a selection is made (so a sibling script can
+  auto-fill the symbol field). Selection is restricted to the embedded list.
+*/}}
+{{define "currency_picker"}}
+<div class="combobox" data-combobox>
+  <input type="hidden" name="currency_code" value="{{ .CurrencyCode }}" data-cb-value>
+
+  <button type="button"
+          class="combobox-trigger"
+          aria-haspopup="listbox"
+          aria-expanded="false"
+          data-cb-trigger>
+    <span class="combobox-display is-placeholder"
+          data-cb-display
+          data-placeholder="Search currencies…"></span>
+    <svg class="combobox-chevron" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path fill-rule="evenodd" d="M10 12a1 1 0 0 1-.7-.29l-3-3a1 1 0 1 1 1.4-1.42L10 9.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-3 3a1 1 0 0 1-.7.29z"/>
+    </svg>
+  </button>
+
+  <div class="combobox-panel" hidden data-cb-panel>
+    <div class="combobox-search-wrap">
+      <input type="text"
+             autocomplete="off"
+             spellcheck="false"
+             placeholder="Type to search… (e.g. naira, ₦, NGN)"
+             data-cb-search>
+    </div>
+    <div class="combobox-list" role="listbox" data-cb-list>
+      {{ range .Currencies }}
+        <button type="button"
+                class="combobox-option"
+                role="option"
+                data-value="{{ .Code }}"
+                data-symbol="{{ .Symbol }}"
+                data-label="{{ .Code }} — {{ .Name }}"
+                data-search="{{ .SearchKey }}"
+                {{ if eq $.CurrencyCode .Code }}data-selected="true"{{ end }}>
+          <span class="cb-code">{{ .Code }}</span>
+          <span class="cb-name">{{ .Name }}</span>
+          <span class="cb-symbol">{{ .Symbol }}</span>
+        </button>
+      {{ end }}
+      <div class="combobox-empty" hidden data-cb-empty>No currencies match.</div>
+    </div>
+  </div>
+</div>
+{{end}}

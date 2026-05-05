@@ -1,0 +1,10 @@
+{{define "brand_mark"}}
+<span class="brand-mark" aria-hidden="true">P</span>
+{{end}}
+
+{{define "brand_lockup"}}
+<a href="/" class="inline-flex items-center gap-2.5 group">
+  {{ template "brand_mark" . }}
+  <span class="font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">Pennywise</span>
+</a>
+{{end}}

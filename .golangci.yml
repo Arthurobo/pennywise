@@ -1,0 +1,41 @@
+version: "2"
+run:
+  timeout: 5m
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - misspell
+    - revive
+    - bodyclose
+    - gosec
+  exclusions:
+    paths:
+      - internal/db/sqlc
+    rules:
+      - path: _test\.go
+        linters:
+          - gosec
+          - errcheck
+  settings:
+    revive:
+      rules:
+        - name: var-naming
+        - name: exported
+          disabled: true
+    gosec:
+      excludes:
+        - G404
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/Arthurobo/pennywise

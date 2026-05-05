@@ -1,0 +1,93 @@
+{{define "title"}}Recently deleted — Pennywise{{end}}
+
+{{define "content"}}
+<div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
+  <header class="flex items-end justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight">Recently deleted</h1>
+      <p class="text-sm text-zinc-500 dark:text-zinc-400">
+        {{ .Total }} item{{ if ne .Total 1 }}s{{ end }} ·
+        Auto-purge after {{ .Retention }} day{{ if ne .Retention 1 }}s{{ end }}
+        (<a href="/settings#trash" class="underline hover:text-zinc-900 dark:hover:text-zinc-100">change</a>)
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <a href="/expenses" class="btn-secondary">← Back to Expenses</a>
+      {{ if gt .Total 0 }}
+        <form action="/expenses/trash/empty" method="post" class="inline"
+              data-confirm="Permanently delete all {{ .Total }} items? This cannot be undone.">
+          <input type="hidden" name="_csrf" value="{{ .CSRFToken }}">
+          <button type="submit" class="btn-danger">Empty trash</button>
+        </form>
+      {{ end }}
+    </div>
+  </header>
+
+  {{ if .Rows }}
+    <div class="card overflow-hidden">
+      <table class="w-full">
+        <thead class="bg-zinc-50 dark:bg-zinc-900/50">
+          <tr>
+            <th class="table-th">Spent on</th>
+            <th class="table-th">Date</th>
+            <th class="table-th">Category</th>
+            <th class="table-th">Ledger</th>
+            <th class="table-th text-right">Amount</th>
+            <th class="table-th">Auto-purges</th>
+            <th class="table-th text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{ range .Rows }}
+            <tr>
+              <td class="table-td">
+                <div class="font-medium">{{ .Row.Description }}</div>
+                {{ if nullStringPresent .Row.Notes }}
+                  <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ truncate (nullStr .Row.Notes) 80 }}</div>
+                {{ end }}
+              </td>
+              <td class="table-td text-zinc-500 dark:text-zinc-400 whitespace-nowrap">{{ formatDate .Row.SpentAt $.Owner.Timezone }}</td>
+              <td class="table-td">
+                {{ if nullStringPresent .Row.CategoryName }}
+                  <span class="badge"><span class="w-2 h-2 rounded-full" style="background:{{ nullStr .Row.CategoryColor }}"></span>{{ nullStr .Row.CategoryName }}</span>
+                {{ else }}<span class="text-zinc-400">—</span>{{ end }}
+              </td>
+              <td class="table-td">
+                {{ if nullStringPresent .Row.LedgerName }}{{ nullStr .Row.LedgerName }}{{ else }}<span class="text-zinc-400">—</span>{{ end }}
+              </td>
+              <td class="table-td text-right font-medium whitespace-nowrap">{{ money .Row.Amount $.CurrencySymbol }}</td>
+              <td class="table-td text-xs text-zinc-500 dark:text-zinc-400 whitespace-nowrap">{{ .ExpiresIn }}</td>
+              <td class="table-td text-right whitespace-nowrap">
+                <form action="/expenses/trash/{{ .Row.ID }}/restore" method="post" class="inline">
+                  <input type="hidden" name="_csrf" value="{{ $.CSRFToken }}">
+                  <button type="submit" class="nav-link">Restore</button>
+                </form>
+                <form action="/expenses/trash/{{ .Row.ID }}/delete" method="post" class="inline"
+                      data-confirm="Permanently delete {{ money .Row.Amount $.CurrencySymbol }} — {{ .Row.Description }}? This cannot be undone.">
+                  <input type="hidden" name="_csrf" value="{{ $.CSRFToken }}">
+                  <button type="submit" class="nav-link text-red-600 hover:text-red-700">Delete forever</button>
+                </form>
+              </td>
+            </tr>
+          {{ end }}
+        </tbody>
+      </table>
+    </div>
+
+    {{ if gt .TotalPages 1 }}
+      <nav class="flex items-center justify-between text-sm">
+        <span class="text-zinc-500 dark:text-zinc-400">Page {{ .Page }} of {{ .TotalPages }}</span>
+        <div class="flex gap-2">
+          {{ if .HasPrev }}<a href="?page={{ .PrevPage }}" class="btn-secondary">Previous</a>{{ end }}
+          {{ if .HasNext }}<a href="?page={{ .NextPage }}" class="btn-secondary">Next</a>{{ end }}
+        </div>
+      </nav>
+    {{ end }}
+  {{ else }}
+    <div class="card p-12 text-center text-zinc-500 dark:text-zinc-400">
+      🗑 Trash is empty.
+      <p class="mt-2 text-xs">Deleted expenses live here for {{ .Retention }} day{{ if ne .Retention 1 }}s{{ end }} before being permanently removed.</p>
+    </div>
+  {{ end }}
+</div>
+{{end}}

@@ -1,0 +1,66 @@
+{{define "title"}}Categories — Pennywise{{end}}
+
+{{define "content"}}
+<div class="max-w-3xl mx-auto px-4 py-8 space-y-6">
+  <header>
+    <h1 class="text-2xl font-semibold tracking-tight">Settings</h1>
+  </header>
+
+  {{ template "settings_tabs" . }}
+
+  <section class="card p-6 space-y-4">
+    <h2 class="font-semibold">Add category</h2>
+    <form action="/settings/categories" method="post" class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+      <input type="hidden" name="_csrf" value="{{ .CSRFToken }}">
+      <div class="sm:col-span-2">
+        <label for="name">Name</label>
+        <input id="name" name="name" required maxlength="80">
+      </div>
+      <div class="flex items-end gap-2">
+        <div class="flex-1">
+          <label for="color">Color</label>
+          <input id="color" name="color" type="color" value="#6b7280" class="h-10 p-1">
+        </div>
+        <button type="submit" class="btn-primary">Add</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="card overflow-hidden">
+    <table class="w-full">
+      <thead class="bg-zinc-50 dark:bg-zinc-900/50">
+        <tr>
+          <th class="table-th">Name</th>
+          <th class="table-th">Color</th>
+          <th class="table-th">Status</th>
+          <th class="table-th"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{ range .Categories }}
+          <tr>
+            <td class="table-td">
+              <form action="/settings/categories/{{ .ID }}" method="post" class="flex gap-2 items-center">
+                <input type="hidden" name="_csrf" value="{{ $.CSRFToken }}">
+                <input type="text" name="name" value="{{ .Name }}" maxlength="80" class="text-sm">
+                <input type="color" name="color" value="{{ .Color }}" class="h-9 p-1 w-12">
+                <button type="submit" class="btn-secondary">Save</button>
+              </form>
+            </td>
+            <td class="table-td"><span class="w-4 h-4 inline-block rounded-full" style="background:{{ .Color }}"></span></td>
+            <td class="table-td">
+              {{ if eq .IsArchived 1 }}<span class="badge">Archived</span>{{ else }}<span class="badge">Active</span>{{ end }}
+            </td>
+            <td class="table-td text-right">
+              <form action="/settings/categories/{{ .ID }}/archive" method="post" class="inline">
+                <input type="hidden" name="_csrf" value="{{ $.CSRFToken }}">
+                <button type="submit" class="nav-link">{{ if eq .IsArchived 1 }}Unarchive{{ else }}Archive{{ end }}</button>
+              </form>
+            </td>
+          </tr>
+        {{ end }}
+      </tbody>
+    </table>
+  </section>
+</div>
+{{end}}

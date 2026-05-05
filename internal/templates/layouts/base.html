@@ -1,0 +1,88 @@
+{{define "base"}}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ .CSRFToken }}">
+  <title>{{ block "title" . }}Pennywise{{ end }}</title>
+  <link rel="stylesheet" href="/static/css/output.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2318181b'/%3E%3Ctext x='50%25' y='58%25' text-anchor='middle' font-family='ui-sans-serif,system-ui' font-weight='700' font-size='42' fill='%23fafafa'%3EP%3C/text%3E%3C/svg%3E">
+  <script>
+    // Inline theme init runs before paint to avoid a flash of wrong theme.
+    (function () {
+      try {
+        var saved = localStorage.getItem('pw-theme');
+        if (!saved) saved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        if (saved === 'dark') document.documentElement.classList.add('dark');
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body class="min-h-screen flex flex-col">
+  {{ if .Owner }}{{ template "navbar" . }}{{ end }}
+
+  <main class="flex-1">
+    {{ block "content" . }}{{ end }}
+  </main>
+
+  <footer class="border-t border-zinc-200 dark:border-zinc-800 mt-12 py-6">
+    <div class="max-w-6xl mx-auto px-4 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+      <span>Pennywise {{ .Version }} — local-first.</span>
+      <button type="button" class="nav-link" onclick="PennywiseTheme.toggle()" aria-label="Toggle theme">
+        Toggle theme
+      </button>
+    </div>
+  </footer>
+
+  <!-- Global confirm modal. Replaces the browser's native confirm()/alert().
+       Driven by app.js: any element with [data-confirm], any form with one,
+       and HTMX's hx-confirm attribute all route through this single dialog. -->
+  <dialog id="pw-confirm" class="pw-modal" aria-labelledby="pw-confirm-title">
+    <div class="pw-modal-body">
+      <h3 id="pw-confirm-title" class="pw-modal-title">Are you sure?</h3>
+      <p id="pw-confirm-message" class="pw-modal-message"></p>
+      <div class="pw-modal-actions">
+        <button type="button" id="pw-confirm-cancel" class="btn-secondary">Cancel</button>
+        <button type="button" id="pw-confirm-ok" class="btn-danger">Confirm</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="/static/js/htmx.min.js" defer></script>
+  <script src="/static/js/chart.min.js" defer></script>
+  <script src="/static/js/app.js" defer></script>
+</body>
+</html>
+{{end}}
+
+{{define "navbar"}}
+<nav class="border-b border-zinc-200 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/80 backdrop-blur sticky top-0 z-10">
+  <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <a href="/dashboard" class="inline-flex items-center gap-2.5">
+        <span class="brand-mark" style="width:1.75rem;height:1.75rem;border-radius:0.5rem;font-size:0.95rem;">P</span>
+        <span class="font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 hidden sm:inline">Pennywise</span>
+      </a>
+      <div class="hidden sm:flex items-center gap-0.5 ml-2">
+        <a href="/dashboard" class="nav-link {{ if eq .ActivePath "dashboard" }}nav-link-active{{ end }}">Dashboard</a>
+        <a href="/expenses"  class="nav-link {{ if eq .ActivePath "expenses"  }}nav-link-active{{ end }}">Expenses</a>
+        <a href="/ledgers"   class="nav-link {{ if eq .ActivePath "ledgers"   }}nav-link-active{{ end }}">Ledgers</a>
+        <a href="/reports"   class="nav-link {{ if eq .ActivePath "reports"   }}nav-link-active{{ end }}">Reports</a>
+        <a href="/settings"  class="nav-link {{ if eq .ActivePath "settings"  }}nav-link-active{{ end }}">Settings</a>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="/expenses/new" class="btn-primary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        <span>New expense</span>
+      </a>
+      <form action="/logout" method="post" class="inline">
+        <input type="hidden" name="_csrf" value="{{ .CSRFToken }}">
+        <button type="submit" class="btn-ghost" aria-label="Sign out" title="Sign out">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+      </form>
+    </div>
+  </div>
+</nav>
+{{end}}

@@ -1,0 +1,94 @@
+{{define "title"}}Welcome — Pennywise{{end}}
+
+{{define "content"}}
+<div class="auth-shell">
+  <div class="w-full max-w-md">
+    <div class="flex flex-col items-center text-center mb-8">
+      {{ template "brand_mark" . }}
+      <h1 class="mt-5 text-2xl font-semibold tracking-tight">Welcome to Pennywise</h1>
+      <p class="mt-1.5 text-sm text-zinc-500 dark:text-zinc-400">
+        Set up your account. This is the only one on this install.
+      </p>
+    </div>
+
+    {{ if .Error }}
+      <div class="alert-error mb-4">{{ .Error }}</div>
+    {{ end }}
+
+    <form action="/setup" method="post" class="space-y-4">
+      <input type="hidden" name="_csrf" value="{{ .CSRFToken }}">
+
+      <div>
+        <label for="display_name">Your name</label>
+        <input id="display_name" name="display_name" required autofocus
+               value="{{ .DisplayName }}" placeholder="Ada Lovelace">
+      </div>
+
+      <div>
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" required
+               value="{{ .Email }}" placeholder="you@example.com">
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" required minlength="8"
+                 placeholder="••••••••">
+        </div>
+        <div>
+          <label for="password_confirm">Confirm</label>
+          <input id="password_confirm" name="password_confirm" type="password" required minlength="8"
+                 placeholder="••••••••">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-3">
+        <div class="col-span-2">
+          <label>Currency</label>
+          {{ template "currency_picker" (dict "Currencies" .Currencies "CurrencyCode" (default .Currency "USD")) }}
+        </div>
+        <div>
+          <label for="currency_symbol">Symbol</label>
+          <input id="currency_symbol" name="currency_symbol" required
+                 class="text-center font-mono"
+                 value="{{ if .Symbol }}{{ .Symbol }}{{ else }}${{ end }}">
+        </div>
+      </div>
+
+      <div>
+        <label for="timezone">Timezone</label>
+        <select id="timezone" name="timezone" required>
+          {{ range .Timezones }}
+            <option value="{{ . }}" {{ if eq $.Timezone . }}selected{{ end }}>{{ . }}</option>
+          {{ end }}
+        </select>
+      </div>
+
+      <button type="submit" class="btn-primary w-full mt-2">Create account</button>
+    </form>
+
+    <p class="mt-6 text-xs text-zinc-500 dark:text-zinc-500 text-center">
+      Your data lives in a local SQLite file. Back it up by copying it.
+    </p>
+  </div>
+</div>
+
+<script>
+  // Auto-fill currency symbol when the picker selection changes.
+  document.querySelector('input[name="currency_code"]').addEventListener('change', function (e) {
+    var sym = e.target.dataset.symbol;
+    if (sym) document.getElementById('currency_symbol').value = sym;
+  });
+  // Preselect the browser's timezone if present in the dropdown.
+  (function () {
+    try {
+      var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      var sel = document.getElementById('timezone');
+      for (var i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === tz) { sel.selectedIndex = i; break; }
+      }
+    } catch (e) {}
+  })();
+</script>
+{{end}}

@@ -1,0 +1,24 @@
+{{define "settings_tabs"}}
+<nav class="flex flex-wrap gap-1 border-b border-zinc-200 dark:border-zinc-800">
+  <a href="/settings"            class="nav-link {{ if eq .ActiveTab "profile"    }}nav-link-active{{ end }}">Profile</a>
+  <a href="/settings/llm"        class="nav-link {{ if eq .ActiveTab "llm"        }}nav-link-active{{ end }}">
+    LLM Provider {{ template "settings_tab_dot" .LLMStatus }}
+  </a>
+  <a href="/settings/telegram"   class="nav-link {{ if eq .ActiveTab "telegram"   }}nav-link-active{{ end }}">
+    Telegram Bot {{ template "settings_tab_dot" .TelegramStatus }}
+  </a>
+  <a href="/settings/categories" class="nav-link {{ if eq .ActiveTab "categories" }}nav-link-active{{ end }}">Categories</a>
+</nav>
+{{end}}
+
+{{define "settings_tab_dot"}}
+{{ if . }}
+  {{ if eq .State "ok" }}
+    <span class="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-green-500" title="{{ .Label }}"></span>
+  {{ else if eq .State "warn" }}
+    <span class="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-amber-500" title="{{ .Label }}"></span>
+  {{ else }}
+    <span class="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-zinc-400" title="{{ .Label }}"></span>
+  {{ end }}
+{{ end }}
+{{end}}

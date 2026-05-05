@@ -1,0 +1,75 @@
+{{define "title"}}{{ if eq .Mode "edit" }}Edit{{ else }}New{{ end }} ledger — Pennywise{{end}}
+
+{{define "content"}}
+<div class="max-w-2xl mx-auto px-4 py-8">
+  <h1 class="text-2xl font-semibold tracking-tight mb-6">
+    {{ if eq .Mode "edit" }}Edit ledger{{ else }}New ledger{{ end }}
+  </h1>
+
+  {{ if .Error }}
+    <div class="alert-error mb-4">{{ .Error }}</div>
+  {{ end }}
+
+  <form action="{{ .FormAction }}" method="post" class="card p-6 space-y-4">
+    <input type="hidden" name="_csrf" value="{{ .CSRFToken }}">
+
+    <div>
+      <label for="name">Name</label>
+      <input id="name" name="name" required maxlength="120"
+             value="{{ if .NameStr }}{{ .NameStr }}{{ else if .Ledger }}{{ .Ledger.Name }}{{ end }}">
+    </div>
+
+    <div>
+      <label for="description">Description (optional)</label>
+      <textarea id="description" name="description" rows="3" maxlength="500">{{ if .DescStr }}{{ .DescStr }}{{ else if .Ledger }}{{ nullStr .Ledger.Description }}{{ end }}</textarea>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div>
+        <label for="budget_amount">Budget (optional)</label>
+        <div class="relative">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">{{ .CurrencySymbol }}</span>
+          <input id="budget_amount" name="budget_amount" inputmode="decimal" autocomplete="off"
+                 class="pl-8" placeholder="0.00" value="{{ .BudgetStr }}">
+        </div>
+      </div>
+      <div>
+        <label for="start_date">Start date (optional)</label>
+        <input id="start_date" name="start_date" type="date" value="{{ .StartStr }}">
+      </div>
+      <div>
+        <label for="end_date">End date (optional)</label>
+        <input id="end_date" name="end_date" type="date" value="{{ .EndStr }}">
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between pt-2">
+      <a href="/ledgers" class="nav-link">Cancel</a>
+      <button type="submit" class="btn-primary">
+        {{ if eq .Mode "edit" }}Save{{ else }}Create{{ end }}
+      </button>
+    </div>
+  </form>
+
+  {{ if eq .Mode "edit" }}
+    <div class="card p-6 mt-6 space-y-3">
+      <h3 class="font-medium">Lifecycle</h3>
+      <form action="/ledgers/{{ .Ledger.ID }}/archive" method="post" class="flex items-center justify-between gap-4">
+        <input type="hidden" name="_csrf" value="{{ .CSRFToken }}">
+        <span class="text-sm text-zinc-600 dark:text-zinc-400">
+          {{ if eq .Ledger.IsArchived 1 }}This ledger is archived.{{ else }}Archive to hide from the dashboard.{{ end }}
+        </span>
+        <button type="submit" class="btn-secondary">
+          {{ if eq .Ledger.IsArchived 1 }}Unarchive{{ else }}Archive{{ end }}
+        </button>
+      </form>
+      <button type="button" class="btn-danger w-full"
+              hx-delete="/ledgers/{{ .Ledger.ID }}?force=1"
+              hx-confirm="Delete this ledger permanently? Expenses linked to it will keep their data but lose the ledger link. This cannot be undone."
+              hx-target="body" hx-swap="none">
+        Delete ledger
+      </button>
+    </div>
+  {{ end }}
+</div>
+{{end}}

@@ -1,0 +1,300 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply bg-zinc-50 text-zinc-900 antialiased;
+  }
+  html.dark {
+    /* Slightly off-black so cards/borders register against it. */
+    background-color: #0a0a0b;
+    @apply text-zinc-100;
+  }
+  body { @apply min-h-screen; }
+
+  /* Selection color */
+  ::selection { @apply bg-indigo-500/25 text-zinc-900 dark:text-white; }
+
+  /* Inputs */
+  input, select, textarea {
+    @apply w-full rounded-lg
+           border border-zinc-300 dark:border-zinc-800
+           bg-white dark:bg-zinc-900
+           px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100
+           placeholder:text-zinc-400 dark:placeholder:text-zinc-600
+           shadow-sm dark:shadow-none
+           transition
+           focus:outline-none
+           focus:border-zinc-400 dark:focus:border-zinc-600
+           focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20;
+  }
+  input[type="color"] { @apply p-0.5 cursor-pointer; }
+  input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.5); }
+  html.dark input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); }
+
+  label {
+    @apply block text-[13px] font-medium text-zinc-700 dark:text-zinc-300 mb-1.5;
+  }
+
+  code { @apply font-mono text-[0.9em]; }
+}
+
+@layer components {
+  /* ─── Buttons ────────────────────────────────────────────── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5
+           rounded-lg px-3.5 py-2 text-sm font-medium
+           transition
+           focus:outline-none focus:ring-2 focus:ring-offset-1
+           dark:focus:ring-offset-zinc-950
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn
+           bg-zinc-900 text-white hover:bg-zinc-800
+           dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100
+           focus:ring-zinc-900/30 dark:focus:ring-white/30
+           shadow-sm;
+  }
+  .btn-secondary {
+    @apply btn
+           border border-zinc-200 dark:border-zinc-800
+           bg-white dark:bg-zinc-900
+           text-zinc-700 dark:text-zinc-200
+           hover:bg-zinc-50 dark:hover:bg-zinc-800/60
+           hover:border-zinc-300 dark:hover:border-zinc-700
+           focus:ring-zinc-400/30 dark:focus:ring-zinc-600/30;
+  }
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-500
+           focus:ring-red-600/40 shadow-sm;
+  }
+  .btn-ghost {
+    @apply btn text-zinc-600 dark:text-zinc-400
+           hover:text-zinc-900 dark:hover:text-zinc-100
+           hover:bg-zinc-100 dark:hover:bg-zinc-800/60;
+  }
+
+  /* ─── Cards ──────────────────────────────────────────────── */
+  .card {
+    @apply rounded-xl bg-white dark:bg-zinc-900
+           border border-zinc-200 dark:border-zinc-800
+           shadow-[0_1px_2px_rgba(0,0,0,0.04)]
+           dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)];
+  }
+
+  .stat {
+    @apply card p-5 flex flex-col gap-1;
+  }
+  .stat-label {
+    @apply text-[11px] uppercase tracking-wider font-medium
+           text-zinc-500 dark:text-zinc-400;
+  }
+  .stat-value {
+    @apply text-2xl font-semibold tracking-tight
+           text-zinc-900 dark:text-zinc-100;
+  }
+
+  /* ─── Nav ────────────────────────────────────────────────── */
+  .nav-link {
+    @apply inline-flex items-center gap-1.5
+           px-3 py-1.5 rounded-md text-sm font-medium
+           text-zinc-600 dark:text-zinc-400
+           hover:text-zinc-900 dark:hover:text-zinc-100
+           hover:bg-zinc-100 dark:hover:bg-zinc-800/60
+           transition;
+  }
+  .nav-link-active {
+    @apply text-zinc-900 dark:text-white bg-zinc-100 dark:bg-zinc-800;
+  }
+
+  /* ─── Tables ─────────────────────────────────────────────── */
+  .table-th {
+    @apply px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider
+           text-zinc-500 dark:text-zinc-400
+           border-b border-zinc-200 dark:border-zinc-800;
+  }
+  .table-td {
+    @apply px-3 py-2.5 text-sm
+           border-b border-zinc-100 dark:border-zinc-800/50;
+  }
+
+  /* ─── Badges ─────────────────────────────────────────────── */
+  .badge {
+    @apply inline-flex items-center gap-1.5
+           rounded-full px-2 py-0.5
+           text-xs font-medium
+           bg-zinc-100 text-zinc-700
+           dark:bg-zinc-800 dark:text-zinc-300;
+  }
+
+  /* ─── Progress bar ───────────────────────────────────────── */
+  .progress-track {
+    @apply w-full h-1.5 rounded-full
+           bg-zinc-200 dark:bg-zinc-800 overflow-hidden;
+  }
+  .progress-fill { @apply h-full transition-all; }
+
+  /* ─── Alerts ─────────────────────────────────────────────── */
+  .alert-error {
+    @apply rounded-lg
+           border border-red-200 bg-red-50 text-red-800
+           dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200
+           px-4 py-2.5 text-sm;
+  }
+  .alert-info {
+    @apply rounded-lg
+           border border-blue-200 bg-blue-50 text-blue-800
+           dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-200
+           px-4 py-2.5 text-sm;
+  }
+
+  /* ─── Brand mark ─────────────────────────────────────────── */
+  .brand-mark {
+    @apply inline-flex items-center justify-center
+           w-9 h-9 rounded-xl
+           bg-gradient-to-br from-zinc-900 to-zinc-700
+           text-white font-bold text-lg
+           dark:from-white dark:to-zinc-300 dark:text-zinc-900
+           shadow-md;
+  }
+
+  /* ─── Auth surface (no card, just centered column) ───────── */
+  .auth-shell {
+    @apply min-h-[85vh] flex items-center justify-center px-4 py-12;
+  }
+  .auth-form {
+    @apply w-full max-w-sm space-y-5;
+  }
+
+  /* ─── Field with prefix (currency symbol etc.) ───────────── */
+  .field-prefix {
+    @apply relative;
+  }
+  .field-prefix > .prefix {
+    @apply absolute left-3 top-1/2 -translate-y-1/2
+           text-sm text-zinc-500 dark:text-zinc-400 pointer-events-none;
+  }
+  .field-prefix > input { @apply pl-7; }
+
+  /* ─── Confirm modal (replaces browser confirm/alert) ─────── */
+  .pw-modal {
+    @apply rounded-xl border border-zinc-200 dark:border-zinc-800
+           bg-white dark:bg-zinc-900
+           p-0 max-w-md w-[calc(100%-2rem)]
+           shadow-2xl text-zinc-900 dark:text-zinc-100;
+  }
+  .pw-modal::backdrop {
+    background: rgba(9, 9, 11, 0.6);
+    backdrop-filter: blur(4px);
+  }
+  .pw-modal[open] {
+    animation: pw-modal-in 120ms ease-out;
+  }
+  @keyframes pw-modal-in {
+    from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0)    scale(1);    }
+  }
+  .pw-modal-body { @apply p-6 space-y-4; }
+  .pw-modal-title { @apply text-lg font-semibold tracking-tight; }
+  .pw-modal-message {
+    @apply text-sm text-zinc-600 dark:text-zinc-400 whitespace-pre-line;
+  }
+  .pw-modal-actions { @apply flex justify-end gap-2 pt-2; }
+
+  /* ─── Click-to-copy ──────────────────────────────────────── */
+  .copyable {
+    @apply cursor-pointer relative transition;
+  }
+  .copyable:hover {
+    @apply ring-2 ring-indigo-500/30 dark:ring-indigo-400/20;
+  }
+  .copyable::after {
+    content: "Copied!";
+    @apply absolute -top-2 right-2 -translate-y-full
+           rounded-md px-2 py-0.5 text-xs font-medium
+           bg-green-600 text-white
+           opacity-0 pointer-events-none
+           transition-opacity duration-150;
+  }
+  .copyable.is-copied::after {
+    @apply opacity-100;
+  }
+  .copyable.is-copied {
+    @apply ring-2 ring-green-500/50;
+  }
+
+  /* ─── Combobox (searchable select) ───────────────────────── */
+  .combobox {
+    @apply relative;
+  }
+  .combobox-trigger {
+    @apply w-full rounded-lg
+           border border-zinc-300 dark:border-zinc-800
+           bg-white dark:bg-zinc-900
+           px-3 py-2 text-sm text-left
+           flex items-center justify-between gap-2
+           text-zinc-900 dark:text-zinc-100
+           shadow-sm dark:shadow-none
+           transition cursor-pointer
+           focus:outline-none
+           focus:border-zinc-400 dark:focus:border-zinc-600
+           focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20;
+  }
+  .combobox-trigger[aria-expanded="true"] {
+    @apply ring-2 ring-indigo-500/20 dark:ring-indigo-400/20
+           border-zinc-400 dark:border-zinc-600;
+  }
+  .combobox-trigger > .combobox-display {
+    @apply truncate flex-1 min-w-0;
+  }
+  .combobox-trigger > .combobox-display.is-placeholder {
+    @apply text-zinc-400 dark:text-zinc-600;
+  }
+  .combobox-chevron {
+    @apply w-4 h-4 text-zinc-400 dark:text-zinc-500 flex-shrink-0;
+  }
+  .combobox-panel {
+    @apply absolute z-30 mt-1 w-full rounded-lg
+           border border-zinc-200 dark:border-zinc-800
+           bg-white dark:bg-zinc-900
+           shadow-lg dark:shadow-[0_10px_30px_rgba(0,0,0,0.5)]
+           overflow-hidden;
+  }
+  .combobox-search-wrap {
+    @apply p-2 border-b border-zinc-100 dark:border-zinc-800;
+  }
+  .combobox-search-wrap > input {
+    @apply w-full text-sm py-1.5;
+  }
+  .combobox-list {
+    @apply max-h-64 overflow-y-auto py-1;
+  }
+  .combobox-option {
+    @apply w-full flex items-center gap-3 px-3 py-1.5 text-sm
+           text-zinc-900 dark:text-zinc-100 text-left
+           cursor-pointer;
+  }
+  .combobox-option .cb-code {
+    @apply font-mono text-[11px] uppercase tracking-wider
+           text-zinc-500 dark:text-zinc-500
+           w-12 flex-shrink-0;
+  }
+  .combobox-option .cb-name {
+    @apply flex-1 min-w-0 truncate;
+  }
+  .combobox-option .cb-symbol {
+    @apply text-xs text-zinc-500 dark:text-zinc-500 flex-shrink-0;
+  }
+  .combobox-option.is-active {
+    @apply bg-zinc-100 dark:bg-zinc-800;
+  }
+  .combobox-option.is-active .cb-code,
+  .combobox-option.is-active .cb-symbol {
+    @apply text-zinc-700 dark:text-zinc-300;
+  }
+  .combobox-empty {
+    @apply px-3 py-6 text-center text-sm text-zinc-500 dark:text-zinc-500;
+  }
+}

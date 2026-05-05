@@ -1,0 +1,153 @@
+{{define "title"}}Reports — Pennywise{{end}}
+
+{{define "content"}}
+<div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
+  <header class="flex items-end justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight">Reports</h1>
+      <p class="text-sm text-zinc-500 dark:text-zinc-400">
+        {{ .From }} → {{ .To }} · Total {{ money .Total .CurrencySymbol }}
+      </p>
+    </div>
+    <a href="/export/csv?from={{ .From }}&to={{ .To }}" class="btn-secondary">Export CSV</a>
+  </header>
+
+  <form class="card p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 items-end" method="get">
+    <div>
+      <label>From</label>
+      <input type="date" name="from" value="{{ .From }}">
+    </div>
+    <div>
+      <label>To</label>
+      <input type="date" name="to" value="{{ .To }}">
+    </div>
+    <button type="submit" class="btn-primary">Apply</button>
+  </form>
+
+  <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="card p-5">
+      <h2 class="font-semibold mb-3">By category</h2>
+      <div class="h-64"><canvas id="rep-cat"></canvas></div>
+      <table class="w-full mt-4 text-sm">
+        <tbody>
+          {{ range .Categories }}
+            <tr class="border-t border-zinc-100 dark:border-zinc-800/60">
+              <td class="py-1.5 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full" style="background:{{ .CategoryColor }}"></span>{{ .CategoryName }}
+              </td>
+              <td class="py-1.5 text-right font-medium">{{ money .Total $.CurrencySymbol }}</td>
+            </tr>
+          {{ end }}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card p-5">
+      <h2 class="font-semibold mb-3">By ledger</h2>
+      <div class="h-64"><canvas id="rep-led"></canvas></div>
+      <table class="w-full mt-4 text-sm">
+        <tbody>
+          {{ range .Ledgers }}
+            <tr class="border-t border-zinc-100 dark:border-zinc-800/60">
+              <td class="py-1.5">{{ .LedgerName }}</td>
+              <td class="py-1.5 text-right font-medium">{{ money .Total $.CurrencySymbol }}</td>
+            </tr>
+          {{ end }}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card p-5">
+    <h2 class="font-semibold mb-3">{{ .TimeSeriesGran }} spending</h2>
+    <div class="h-72"><canvas id="rep-time"></canvas></div>
+  </section>
+
+  <section class="card p-5">
+    <h2 class="font-semibold mb-3">Top 10 expenses</h2>
+    {{ if .TopExpenses }}
+      <table class="w-full">
+        <thead class="bg-zinc-50 dark:bg-zinc-900/50">
+          <tr>
+            <th class="table-th">Date</th>
+            <th class="table-th">Spent on</th>
+            <th class="table-th">Category</th>
+            <th class="table-th">Ledger</th>
+            <th class="table-th text-right">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{ range .TopExpenses }}
+            <tr>
+              <td class="table-td text-zinc-500 dark:text-zinc-400">{{ formatDate .SpentAt $.Owner.Timezone }}</td>
+              <td class="table-td"><a href="/expenses/{{ .ID }}/edit" class="hover:underline">{{ .Description }}</a></td>
+              <td class="table-td">
+                {{ if nullStringPresent .CategoryName }}
+                  <span class="badge"><span class="w-2 h-2 rounded-full" style="background:{{ nullStr .CategoryColor }}"></span>{{ nullStr .CategoryName }}</span>
+                {{ else }}<span class="text-zinc-400">—</span>{{ end }}
+              </td>
+              <td class="table-td">
+                {{ if nullStringPresent .LedgerName }}{{ nullStr .LedgerName }}{{ else }}<span class="text-zinc-400">—</span>{{ end }}
+              </td>
+              <td class="table-td text-right font-medium">{{ money .Amount $.CurrencySymbol }}</td>
+            </tr>
+          {{ end }}
+        </tbody>
+      </table>
+    {{ else }}
+      <p class="text-sm text-zinc-500 dark:text-zinc-400">No expenses in this range.</p>
+    {{ end }}
+  </section>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (typeof Chart === 'undefined') return;
+    function pie(id, data, fallbackColor) {
+      var el = document.getElementById(id);
+      if (!el || !Array.isArray(data) || data.length === 0) return;
+      new Chart(el, {
+        type: 'doughnut',
+        data: {
+          labels: data.map(function (s) { return s.label; }),
+          datasets: [{
+            data: data.map(function (s) { return s.value / 100; }),
+            backgroundColor: data.map(function (s, i) { return s.color || fallbackColor[i % fallbackColor.length]; }),
+            borderWidth: 0,
+          }],
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } },
+      });
+    }
+    var palette = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#ef4444', '#6b7280'];
+    var cat = {{ .CategoryJSON }};   try { cat = JSON.parse(cat); } catch(e){}
+    var led = {{ .LedgerJSON }};     try { led = JSON.parse(led); } catch(e){}
+    var ts  = {{ .TimeSeriesJSON }}; try { ts  = JSON.parse(ts);  } catch(e){}
+    pie('rep-cat', cat, palette);
+    pie('rep-led', led, palette);
+
+    var tsCtx = document.getElementById('rep-time');
+    if (tsCtx && Array.isArray(ts) && ts.length > 0) {
+      new Chart(tsCtx, {
+        type: 'line',
+        data: {
+          labels: ts.map(function (p) { return p.label; }),
+          datasets: [{
+            data: ts.map(function (p) { return p.value / 100; }),
+            borderColor: 'rgb(24, 24, 27)',
+            backgroundColor: 'rgba(24, 24, 27, 0.1)',
+            tension: 0.25,
+            fill: true,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } },
+        },
+      });
+    }
+  });
+</script>
+{{end}}

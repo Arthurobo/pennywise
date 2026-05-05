@@ -1,0 +1,56 @@
+{{define "title"}}Ledgers — Pennywise{{end}}
+
+{{define "content"}}
+<div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
+  <header class="flex items-end justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight">Ledgers</h1>
+      <p class="text-sm text-zinc-500 dark:text-zinc-400">
+        Group expenses by project, trip, or budget envelope.
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <a href="/ledgers/new" class="btn-primary">+ New ledger</a>
+      {{ if .ShowArchived }}
+        <a href="/ledgers" class="btn-secondary">Show active</a>
+      {{ else }}
+        <a href="/ledgers?show=archived" class="btn-secondary">Show archived</a>
+      {{ end }}
+    </div>
+  </header>
+
+  {{ if .Ledgers }}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {{ range .Ledgers }}
+        <a href="/ledgers/{{ .Ledger.ID }}" class="card p-5 hover:shadow-md transition">
+          <div class="flex items-start justify-between">
+            <div class="min-w-0">
+              <h3 class="font-medium truncate">{{ .Ledger.Name }}</h3>
+              {{ if nullStringPresent .Ledger.Description }}
+                <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">{{ truncate (nullStr .Ledger.Description) 80 }}</p>
+              {{ end }}
+            </div>
+            <span class="text-sm font-semibold whitespace-nowrap">{{ money .Total $.CurrencySymbol }}</span>
+          </div>
+          {{ if .HasBudget }}
+            <div class="mt-3 progress-track">
+              <div class="progress-fill {{ .StatusClass }}" style="width: {{ if gt .PercentUsed 100 }}100{{ else }}{{ .PercentUsed }}{{ end }}%"></div>
+            </div>
+            <div class="mt-1 flex justify-between text-xs text-zinc-500 dark:text-zinc-400">
+              <span>{{ .PercentUsed }}% of {{ money .Budget $.CurrencySymbol }}</span>
+              {{ if gt .PercentUsed 100 }}<span class="text-red-600 font-medium">Over</span>{{ end }}
+            </div>
+          {{ end }}
+          {{ if eq .Ledger.IsArchived 1 }}
+            <span class="badge mt-3">Archived</span>
+          {{ end }}
+        </a>
+      {{ end }}
+    </div>
+  {{ else }}
+    <div class="card p-12 text-center text-zinc-500 dark:text-zinc-400">
+      {{ if .ShowArchived }}No archived ledgers.{{ else }}No ledgers yet. <a href="/ledgers/new" class="underline">Create one.</a>{{ end }}
+    </div>
+  {{ end }}
+</div>
+{{end}}

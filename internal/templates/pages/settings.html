@@ -1,0 +1,155 @@
+{{define "title"}}Settings — Pennywise{{end}}
+
+{{define "content"}}
+<div class="max-w-3xl mx-auto px-4 py-8 space-y-6">
+  <header>
+    <h1 class="text-2xl font-semibold tracking-tight">Settings</h1>
+  </header>
+
+  {{ template "settings_tabs" . }}
+
+  <section class="card p-6 space-y-4">
+    <h2 class="font-semibold">Profile</h2>
+    <form action="/settings/profile" method="post" class="space-y-4">
+      <input type="hidden" name="_csrf" value="{{ .CSRFToken }}">
+      <div>
+        <label for="display_name">Display name</label>
+        <input id="display_name" name="display_name" required value="{{ .Owner.DisplayName }}">
+      </div>
+      <div>
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" required value="{{ .Owner.Email }}">
+      </div>
+      <div class="text-right">
+        <button type="submit" class="btn-primary">Save</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="card p-6 space-y-4">
+    <h2 class="font-semibold">Password</h2>
+    <p class="text-sm text-zinc-500 dark:text-zinc-400">Changing your password will sign out all sessions.</p>
+    <form action="/settings/password" method="post" class="space-y-4">
+      <input type="hidden" name="_csrf" value="{{ .CSRFToken }}">
+      <div>
+        <label for="current_password">Current password</label>
+        <input id="current_password" name="current_password" type="password" required>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label for="new_password">New password</label>
+          <input id="new_password" name="new_password" type="password" required minlength="8">
+        </div>
+        <div>
+          <label for="new_password_confirm">Confirm</label>
+          <input id="new_password_confirm" name="new_password_confirm" type="password" required minlength="8">
+        </div>
+      </div>
+      <div class="text-right">
+        <button type="submit" class="btn-primary">Update password</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="card p-6 space-y-4">
+    <h2 class="font-semibold">Preferences</h2>
+    <form action="/settings/preferences" method="post" class="space-y-4">
+      <input type="hidden" name="_csrf" value="{{ .CSRFToken }}">
+      <div class="grid grid-cols-3 gap-3">
+        <div class="col-span-2">
+          <label>Currency</label>
+          {{ template "currency_picker" (dict "Currencies" .Currencies "CurrencyCode" .Owner.CurrencyCode) }}
+        </div>
+        <div>
+          <label for="currency_symbol">Symbol</label>
+          <input id="currency_symbol" name="currency_symbol"
+                 class="text-center font-mono"
+                 value="{{ .Owner.CurrencySymbol }}">
+        </div>
+      </div>
+      <div>
+        <label for="timezone">Timezone</label>
+        <select id="timezone" name="timezone">
+          {{ range .Timezones }}
+            <option value="{{ . }}" {{ if eq $.Owner.Timezone . }}selected{{ end }}>{{ . }}</option>
+          {{ end }}
+        </select>
+      </div>
+      <div class="text-right">
+        <button type="submit" class="btn-primary">Save</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="card p-6 space-y-4">
+    <div>
+      <h2 class="font-semibold">Dashboard URL</h2>
+      <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+        Public address Pennywise is reachable at. Shown to you in the Telegram
+        bot so you always know where to log in. Update this once you put
+        Pennywise behind a real domain.
+      </p>
+    </div>
+    <form action="/settings/dashboard-url" method="post" class="flex items-end gap-3">
+      <input type="hidden" name="_csrf" value="{{ .CSRFToken }}">
+      <div class="flex-1">
+        <label for="dashboard_url">URL</label>
+        <input id="dashboard_url" name="dashboard_url" type="url" required
+               maxlength="256" inputmode="url" autocomplete="url"
+               value="{{ .Owner.DashboardUrl }}" class="font-mono">
+      </div>
+      <button type="submit" class="btn-primary">Save</button>
+    </form>
+  </section>
+
+  <section id="trash" class="card p-6 space-y-4">
+    <div>
+      <h2 class="font-semibold">🗑 Trash retention</h2>
+      <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+        Deleted expenses are kept in the
+        <a href="/expenses/trash" class="underline">Recently deleted</a> view
+        for this many days before being permanently removed.
+      </p>
+    </div>
+    <form action="/settings/trash-retention" method="post" class="flex items-end gap-3">
+      <input type="hidden" name="_csrf" value="{{ .CSRFToken }}">
+      <div class="flex-shrink-0">
+        <label for="trash_retention_days">Days</label>
+        <input id="trash_retention_days" name="trash_retention_days"
+               type="number" min="1" max="365" required
+               value="{{ .Owner.TrashRetentionDays }}"
+               class="w-28 text-center font-mono">
+      </div>
+      <div class="flex-1 text-xs text-zinc-500 dark:text-zinc-400">
+        Min 1 day, max 365 days. Default 30.
+      </div>
+      <button type="submit" class="btn-primary">Save</button>
+    </form>
+  </section>
+
+  <section class="card p-6 space-y-3">
+    <h2 class="font-semibold">Data</h2>
+    <p class="text-sm text-zinc-500 dark:text-zinc-400">
+      Database file: <code class="text-xs">{{ index .BuildInfo "DBPath" }}</code>
+      — back it up by copying it.
+    </p>
+    <a href="/export/csv" class="btn-secondary inline-block">Export all expenses (CSV)</a>
+  </section>
+
+  <section class="card p-6 space-y-2 text-sm text-zinc-500 dark:text-zinc-400">
+    <h2 class="font-semibold text-zinc-900 dark:text-zinc-100">About</h2>
+    <p>Pennywise <span class="font-mono">{{ index .BuildInfo "Version" }}</span>
+       (commit <span class="font-mono">{{ index .BuildInfo "Commit" }}</span>,
+       built <span class="font-mono">{{ index .BuildInfo "BuildDate" }}</span>)
+    </p>
+  </section>
+</div>
+
+<script>
+  document.querySelector('input[name="currency_code"]').addEventListener('change', function (e) {
+    var sym = e.target.dataset.symbol;
+    if (sym) document.getElementById('currency_symbol').value = sym;
+  });
+</script>
+{{end}}
+

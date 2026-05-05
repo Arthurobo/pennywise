@@ -1,0 +1,10 @@
+DROP INDEX IF EXISTS idx_expenses_category_id;
+DROP INDEX IF EXISTS idx_expenses_ledger_id;
+DROP INDEX IF EXISTS idx_expenses_spent_at;
+DROP TABLE IF EXISTS expenses;
+DROP TABLE IF EXISTS ledgers;
+DROP TABLE IF EXISTS categories;
+DROP INDEX IF EXISTS idx_sessions_expires_at;
+DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS app_state;
+DROP TABLE IF EXISTS owner;

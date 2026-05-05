@@ -1,0 +1,237 @@
+{{define "title"}}Expenses — Pennywise{{end}}
+
+{{define "content"}}
+<div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
+  <header class="flex items-end justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight">Expenses</h1>
+      <p class="text-sm text-zinc-500 dark:text-zinc-400">
+        {{ .Total }} expense{{ if ne .Total 1 }}s{{ end }} matching — total {{ money .Sum .CurrencySymbol }}
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="/expenses/trash" class="btn-secondary" title="Recently deleted">🗑 Trash</a>
+      <a href="/expenses/new" class="btn-primary">+ New expense</a>
+    </div>
+  </header>
+
+  <form class="card p-4 grid grid-cols-1 sm:grid-cols-6 gap-3"
+        hx-get="/expenses" hx-target="#expenses-list" hx-push-url="true" hx-trigger="change, search">
+    <div class="sm:col-span-2">
+      <label>Search</label>
+      <input type="search" name="q" value="{{ .Form.Search }}" placeholder="Spent on, notes…">
+    </div>
+    <div>
+      <label>From</label>
+      <input type="date" name="from" value="{{ .Form.From }}">
+    </div>
+    <div>
+      <label>To</label>
+      <input type="date" name="to" value="{{ .Form.To }}">
+    </div>
+    <div>
+      <label>Min</label>
+      <input type="text" name="min" value="{{ .Form.MinAmount }}" placeholder="0.00">
+    </div>
+    <div>
+      <label>Max</label>
+      <input type="text" name="max" value="{{ .Form.MaxAmount }}" placeholder="0.00">
+    </div>
+
+    <div class="sm:col-span-3">
+      <label>Ledger</label>
+      <select name="ledger_id">
+        <option value="">Any</option>
+        <option value="none" {{ if eq .Form.LedgerID "none" }}selected{{ end }}>— Without ledger —</option>
+        {{ range .Ledgers }}
+          <option value="{{ .ID }}" {{ if eq $.Form.LedgerID (printf "%d" .ID) }}selected{{ end }}>{{ .Name }}</option>
+        {{ end }}
+      </select>
+    </div>
+    <div class="sm:col-span-3">
+      <label>Category</label>
+      <select name="category_id">
+        <option value="">Any</option>
+        <option value="none" {{ if eq .Form.CategoryID "none" }}selected{{ end }}>— Uncategorized —</option>
+        {{ range .Categories }}
+          <option value="{{ .ID }}" {{ if eq $.Form.CategoryID (printf "%d" .ID) }}selected{{ end }}>{{ .Name }}</option>
+        {{ end }}
+      </select>
+    </div>
+
+    <div class="sm:col-span-6 flex items-center justify-between">
+      <a href="/expenses" class="nav-link">Reset filters</a>
+      <noscript><button type="submit" class="btn-primary">Apply</button></noscript>
+    </div>
+  </form>
+
+  {{ if .FilterError }}
+    <div class="alert-error">{{ .FilterError }}</div>
+  {{ end }}
+
+  <!-- Bulk-action wrapper: the form persists across HTMX swaps so checking
+       a row keeps working after the table refreshes from a filter change. -->
+  <form id="bulk-form" action="/expenses/bulk-delete" method="post">
+    <input type="hidden" name="_csrf" value="{{ .CSRFToken }}">
+
+    <div id="expenses-list">
+      {{ template "expenses_list" . }}
+    </div>
+
+    <!-- Floating action bar — only visible when at least one row is checked.
+         Centered at the bottom of the viewport, dark/light aware, won't
+         displace content. JS toggles `hidden` and the count + confirm copy. -->
+    <div data-bulk-bar hidden
+         class="fixed bottom-4 left-1/2 -translate-x-1/2 z-20
+                rounded-xl border border-zinc-200 dark:border-zinc-800
+                bg-white dark:bg-zinc-900 shadow-2xl
+                px-4 py-2.5 flex items-center gap-3">
+      <span class="text-sm">
+        <span data-bulk-count class="font-semibold">0</span> selected
+      </span>
+      <button type="button" data-bulk-clear class="btn-ghost text-xs">Clear</button>
+      <button type="submit" data-bulk-submit class="btn-danger text-sm"
+              data-confirm="Move selected expenses to the trash? You can restore them from Recently deleted.">
+        🗑 Delete selected
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  // Bulk-select wiring. Event delegation lets HTMX swap the table body
+  // without us re-binding handlers per row.
+  (function () {
+    var form = document.getElementById('bulk-form');
+    if (!form) return;
+    var bar      = form.querySelector('[data-bulk-bar]');
+    var countEl  = form.querySelector('[data-bulk-count]');
+    var submit   = form.querySelector('[data-bulk-submit]');
+    var clearBtn = form.querySelector('[data-bulk-clear]');
+
+    function rowChecks() {
+      return form.querySelectorAll('[data-bulk-row]');
+    }
+    function masterCheck() {
+      return form.querySelector('[data-bulk-master]');
+    }
+    function update() {
+      var rows = rowChecks();
+      var checked = 0;
+      rows.forEach(function (c) { if (c.checked) checked++; });
+      var master = masterCheck();
+      if (master) {
+        master.checked       = checked > 0 && checked === rows.length;
+        master.indeterminate = checked > 0 && checked < rows.length;
+      }
+      if (checked === 0) {
+        bar.hidden = true;
+        return;
+      }
+      bar.hidden = false;
+      countEl.textContent = checked;
+      // Refresh the confirm copy with the live count.
+      submit.dataset.confirm =
+        'Move ' + checked + ' expense' + (checked === 1 ? '' : 's') +
+        ' to the trash? You can restore them from Recently deleted.';
+    }
+
+    form.addEventListener('change', function (e) {
+      var t = e.target;
+      if (t && t.matches('[data-bulk-master]')) {
+        rowChecks().forEach(function (c) { c.checked = t.checked; });
+      }
+      update();
+    });
+    clearBtn.addEventListener('click', function () {
+      rowChecks().forEach(function (c) { c.checked = false; });
+      var m = masterCheck();
+      if (m) { m.checked = false; m.indeterminate = false; }
+      update();
+    });
+    document.body.addEventListener('htmx:afterSwap', update);
+    update();
+  })();
+</script>
+{{end}}
+
+{{define "expenses_list"}}
+{{ if .Rows }}
+  <div class="card overflow-hidden">
+    <table class="w-full">
+      <thead class="bg-zinc-50 dark:bg-zinc-900/50">
+        <tr>
+          <th class="table-th w-10">
+            <!-- Master select-all. Header partial is reused on HTMX swap;
+                 the bulk-select script in expenses.html re-runs update()
+                 on htmx:afterSwap so this stays in sync. -->
+            <input type="checkbox" data-bulk-master class="cursor-pointer"
+                   aria-label="Select all rows on this page">
+          </th>
+          <th class="table-th">Date</th>
+          <th class="table-th">Spent on</th>
+          <th class="table-th">Category</th>
+          <th class="table-th">Ledger</th>
+          <th class="table-th text-right">Amount</th>
+          <th class="table-th text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{ range .Rows }}
+          <tr>
+            <td class="table-td">
+              <input type="checkbox" name="ids" value="{{ .ID }}"
+                     data-bulk-row class="cursor-pointer"
+                     aria-label="Select expense">
+            </td>
+            <td class="table-td text-zinc-500 dark:text-zinc-400 whitespace-nowrap">{{ formatDate .SpentAt $.Owner.Timezone }}</td>
+            <td class="table-td">
+              <div class="font-medium">{{ .Description }}</div>
+              {{ if nullStringPresent .Notes }}
+                <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ truncate (nullStr .Notes) 100 }}</div>
+              {{ end }}
+            </td>
+            <td class="table-td">
+              {{ if nullStringPresent .CategoryName }}
+                <span class="badge"><span class="w-2 h-2 rounded-full" style="background:{{ nullStr .CategoryColor }}"></span>{{ nullStr .CategoryName }}</span>
+              {{ else }}<span class="text-zinc-400">—</span>{{ end }}
+            </td>
+            <td class="table-td">
+              {{ if nullStringPresent .LedgerName }}{{ nullStr .LedgerName }}{{ else }}<span class="text-zinc-400">—</span>{{ end }}
+            </td>
+            <td class="table-td text-right font-medium whitespace-nowrap">{{ money .Amount $.CurrencySymbol }}</td>
+            <td class="table-td text-right whitespace-nowrap">
+              <a href="/expenses/{{ .ID }}/edit" class="nav-link">Edit</a>
+              <button type="button"
+                      class="nav-link text-red-600 hover:text-red-700"
+                      hx-delete="/expenses/{{ .ID }}"
+                      hx-confirm="Move this expense to the trash? You can restore it from Recently deleted."
+                      hx-target="body" hx-swap="none">
+                Delete
+              </button>
+            </td>
+          </tr>
+        {{ end }}
+      </tbody>
+    </table>
+  </div>
+
+  {{ if gt .TotalPages 1 }}
+    <nav class="mt-4 flex items-center justify-between text-sm">
+      <span class="text-zinc-500 dark:text-zinc-400">Page {{ .Page }} of {{ .TotalPages }}</span>
+      <div class="flex gap-2">
+        {{ if .HasPrev }}
+          <a href="?page={{ .PrevPage }}{{ if .QueryString }}&{{ .QueryString }}{{ end }}" class="btn-secondary">Previous</a>
+        {{ end }}
+        {{ if .HasNext }}
+          <a href="?page={{ .NextPage }}{{ if .QueryString }}&{{ .QueryString }}{{ end }}" class="btn-secondary">Next</a>
+        {{ end }}
+      </div>
+    </nav>
+  {{ end }}
+{{ else }}
+  <div class="card p-12 text-center text-zinc-500 dark:text-zinc-400">
+    No expenses match these filters.
+  </div>
+{{ end }}
+{{end}}
