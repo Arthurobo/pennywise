@@ -57,13 +57,24 @@ func (c Config) IsDevelopment() bool { return strings.EqualFold(c.Env, "developm
 // ./.dev/pennywise.db, never colliding with the user's real install at
 // ~/.pennywise/pennywise.db. Outside the repo, behavior is unchanged.
 func Load() (Config, error) {
+	return loadWithDevAuto(true)
+}
+
+// LoadSkipDevAuto loads config but skips dev auto-detection — useful for
+// CLI commands like backup/restore that should always target the production
+// data directory regardless of cwd.
+func LoadSkipDevAuto() (Config, error) {
+	return loadWithDevAuto(false)
+}
+
+func loadWithDevAuto(auto bool) (Config, error) {
 	envExplicit := os.Getenv("PENNYWISE_ENV")
 	env := envExplicit
 	if env == "" {
 		env = "production"
 	}
 	devAutoDetected := false
-	if envExplicit == "" && inDevCheckout() {
+	if auto && envExplicit == "" && inDevCheckout() {
 		env = "development"
 		devAutoDetected = true
 	}

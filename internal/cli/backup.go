@@ -49,7 +49,7 @@ to bring the server back online.`,
 }
 
 func runBackup(cmd *cobra.Command, _ []string) error {
-	cfg, err := config.Load()
+	cfg, err := config.LoadSkipDevAuto()
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("backup not found at %s", src)
 	}
 
-	cfg, err := config.Load()
+	cfg, err := config.LoadSkipDevAuto()
 	if err != nil {
 		return err
 	}
