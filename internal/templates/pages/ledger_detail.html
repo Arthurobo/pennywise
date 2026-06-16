@@ -1,53 +1,80 @@
 {{define "title"}}{{ .L.Ledger.Name }} — Pennywise{{end}}
 
 {{define "content"}}
-<div class="max-w-6xl mx-auto px-4 py-8 space-y-8">
-  <header class="flex items-end justify-between">
-    <div>
-      <div class="flex items-center gap-3">
+<div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
+  <header class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+    <div class="space-y-1">
+      <div class="flex items-center gap-3 flex-wrap">
         <h1 class="text-2xl font-semibold tracking-tight">{{ .L.Ledger.Name }}</h1>
-        {{ if eq .L.Ledger.IsArchived 1 }}<span class="badge">Archived</span>{{ end }}
+        {{ if eq .L.Ledger.IsArchived 1 }}
+          <span class="badge !bg-amber-50 !text-amber-700 dark:!bg-amber-950/50 dark:!text-amber-300">Archived</span>
+        {{ else }}
+          <span class="badge !bg-emerald-50 !text-emerald-700 dark:!bg-emerald-950/50 dark:!text-emerald-300">Active</span>
+        {{ end }}
       </div>
       {{ if nullStringPresent .L.Ledger.Description }}
-        <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">{{ nullStr .L.Ledger.Description }}</p>
+        <p class="text-sm text-zinc-500 dark:text-zinc-400">{{ nullStr .L.Ledger.Description }}</p>
+      {{ end }}
+      {{ if nullIntPresent .L.Ledger.StartDate }}
+        <p class="text-xs text-zinc-400 dark:text-zinc-500 tabular-nums mt-0.5">
+          {{ formatYMD (nullInt .L.Ledger.StartDate) $.Owner.Timezone }}
+          {{ if nullIntPresent .L.Ledger.EndDate }} → {{ formatYMD (nullInt .L.Ledger.EndDate) $.Owner.Timezone }}{{ end }}
+        </p>
       {{ end }}
     </div>
     <div class="flex gap-2">
-      <a href="/expenses/new?ledger={{ .L.Ledger.ID }}" class="btn-primary">+ Expense in this ledger</a>
-      <a href="/ledgers/{{ .L.Ledger.ID }}/edit" class="btn-secondary">Edit</a>
+      <a href="/expenses/new?ledger={{ .L.Ledger.ID }}" class="btn-primary text-sm">+ Add expense</a>
+      <a href="/ledgers/{{ .L.Ledger.ID }}/edit" class="btn-secondary text-sm">Edit</a>
     </div>
   </header>
 
   <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
     <div class="stat">
-      <span class="stat-label">Spent</span>
+      <span class="stat-label">Total spent</span>
       <span class="stat-value">{{ money .L.Total .CurrencySymbol }}</span>
+      <span class="text-xs text-zinc-400 dark:text-zinc-500 mt-1">{{ .ExpenseCount }} expense{{ if ne .ExpenseCount 1 }}s{{ end }}</span>
     </div>
     {{ if .L.HasBudget }}
       <div class="stat">
         <span class="stat-label">Budget</span>
         <span class="stat-value">{{ money .L.Budget .CurrencySymbol }}</span>
-        <div class="mt-2 progress-track">
-          <div class="progress-fill {{ .L.StatusClass }}"
-               style="width: {{ if gt .L.PercentUsed 100 }}100{{ else }}{{ .L.PercentUsed }}{{ end }}%"></div>
-        </div>
-        <span class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">{{ .L.PercentUsed }}% used</span>
       </div>
       <div class="stat">
         <span class="stat-label">Remaining</span>
-        <span class="stat-value">{{ money (int64Sub .L.Budget .L.Total) .CurrencySymbol }}</span>
+        <span class="stat-value {{ if lt (int64Sub .L.Budget .L.Total) 0 }}text-red-600 dark:text-red-400{{ else }}text-emerald-600 dark:text-emerald-400{{ end }}">
+          {{ money (int64Sub .L.Budget .L.Total) .CurrencySymbol }}
+        </span>
       </div>
     {{ else }}
       <div class="stat">
-        <span class="stat-label">Expenses</span>
-        <span class="stat-value">{{ .ExpenseCount }}</span>
+        <span class="stat-label">Budget</span>
+        <span class="stat-value text-zinc-400 dark:text-zinc-500">—</span>
       </div>
       <div class="stat">
-        <span class="stat-label">Budget</span>
-        <span class="stat-value text-zinc-400">—</span>
+        <span class="stat-label">Date range</span>
+        <span class="stat-value text-zinc-400 dark:text-zinc-500 text-sm">
+          {{ if nullIntPresent .L.Ledger.StartDate }}{{ formatYMD (nullInt .L.Ledger.StartDate) $.Owner.Timezone }}{{ else }}—{{ end }}
+        </span>
       </div>
     {{ end }}
   </section>
+
+  {{ if .L.HasBudget }}
+    <section class="card p-5 space-y-2">
+      <div class="flex items-center justify-between text-sm">
+        <span class="font-medium text-zinc-900 dark:text-zinc-100">Budget progress</span>
+        <span class="text-zinc-500 dark:text-zinc-400 tabular-nums">{{ .L.PercentUsed }}%</span>
+      </div>
+      <div class="progress-track h-2.5">
+        <div class="progress-fill h-2.5 {{ .L.StatusClass }}"
+             style="width: {{ if gt .L.PercentUsed 100 }}100{{ else }}{{ .L.PercentUsed }}{{ end }}%"></div>
+      </div>
+      <div class="flex justify-between text-xs text-zinc-400 dark:text-zinc-500 tabular-nums">
+        <span>{{ money .L.Total .CurrencySymbol }}</span>
+        <span>{{ money .L.Budget .CurrencySymbol }}</span>
+      </div>
+    </section>
+  {{ end }}
 
   <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
     <div class="card p-5">
@@ -61,47 +88,61 @@
   </section>
 
   <section>
-    <h2 class="font-semibold mb-3">Expenses</h2>
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-semibold">Expenses</h2>
+      <span class="text-xs text-zinc-500 dark:text-zinc-400">{{ .ExpenseCount }} total</span>
+    </div>
     {{ if .Expenses }}
       <div class="card overflow-hidden">
-        <table class="w-full">
-          <thead class="bg-zinc-50 dark:bg-zinc-900/50">
-            <tr>
-              <th class="table-th">Date</th>
-              <th class="table-th">Spent on</th>
-              <th class="table-th">Category</th>
-              <th class="table-th text-right">Amount</th>
-              <th class="table-th"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {{ range .Expenses }}
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-zinc-50 dark:bg-zinc-900/50">
               <tr>
-                <td class="table-td text-zinc-500 dark:text-zinc-400">{{ formatDate .SpentAt $.Owner.Timezone }}</td>
-                <td class="table-td">
-                  <div class="font-medium">{{ .Description }}</div>
-                  {{ if nullStringPresent .Notes }}
-                    <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ truncate (nullStr .Notes) 100 }}</div>
-                  {{ end }}
-                </td>
-                <td class="table-td">
-                  {{ if nullStringPresent .CategoryName }}
-                    <span class="badge"><span class="w-2 h-2 rounded-full" style="background:{{ nullStr .CategoryColor }}"></span>{{ nullStr .CategoryName }}</span>
-                  {{ else }}<span class="text-zinc-400">—</span>{{ end }}
-                </td>
-                <td class="table-td text-right font-medium">{{ money .Amount $.CurrencySymbol }}</td>
-                <td class="table-td text-right"><a href="/expenses/{{ .ID }}/edit" class="nav-link">Edit</a></td>
+                <th class="table-th">Date</th>
+                <th class="table-th">Spent on</th>
+                <th class="table-th">Category</th>
+                <th class="table-th text-right">Amount</th>
+                <th class="table-th w-16"></th>
               </tr>
-            {{ end }}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {{ range .Expenses }}
+                <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors">
+                  <td class="table-td text-zinc-500 dark:text-zinc-400 whitespace-nowrap">{{ formatDate .SpentAt $.Owner.Timezone }}</td>
+                  <td class="table-td">
+                    <a href="/expenses/{{ .ID }}/edit" class="font-medium hover:underline">{{ .Description }}</a>
+                    {{ if nullStringPresent .Notes }}
+                      <div class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{{ truncate (nullStr .Notes) 80 }}</div>
+                    {{ end }}
+                  </td>
+                  <td class="table-td">
+                    {{ if nullStringPresent .CategoryName }}
+                      <span class="inline-flex items-center gap-1.5 text-xs">
+                        <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:{{ nullStr .CategoryColor }}"></span>{{ nullStr .CategoryName }}
+                      </span>
+                    {{ else }}<span class="text-zinc-400">—</span>{{ end }}
+                  </td>
+                  <td class="table-td text-right font-medium whitespace-nowrap">{{ money .Amount $.CurrencySymbol }}</td>
+                  <td class="table-td text-right">
+                    <a href="/expenses/{{ .ID }}/edit" class="btn-ghost text-xs !px-2 !py-1">Edit</a>
+                  </td>
+                </tr>
+              {{ end }}
+            </tbody>
+          </table>
+        </div>
       </div>
     {{ else }}
-      <div class="card p-8 text-center text-zinc-500 dark:text-zinc-400">
-        No expenses in this ledger yet.
+      <div class="card p-12 text-center text-zinc-500 dark:text-zinc-400 space-y-2">
+        <p>No expenses in this ledger yet.</p>
+        <a href="/expenses/new?ledger={{ .L.Ledger.ID }}" class="underline">Add your first one.</a>
       </div>
     {{ end }}
   </section>
+
+  <div class="flex justify-end">
+    <a href="/ledgers" class="nav-link">← All ledgers</a>
+  </div>
 </div>
 
 <script>
@@ -146,7 +187,7 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: { legend: { display: false } },
-          scales: { y: { beginAtZero: true } },
+          scales: { y: { beginAtZero: true, ticks: { callback: function(v) { return '{{ .CurrencySymbol }}' + v.toFixed(0); } } } },
         },
       });
     }

@@ -20,36 +20,59 @@
   </header>
 
   {{ if .Ledgers }}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       {{ range .Ledgers }}
-        <a href="/ledgers/{{ .Ledger.ID }}" class="card p-5 hover:shadow-md transition">
-          <div class="flex items-start justify-between">
-            <div class="min-w-0">
-              <h3 class="font-medium truncate">{{ .Ledger.Name }}</h3>
-              {{ if nullStringPresent .Ledger.Description }}
-                <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">{{ truncate (nullStr .Ledger.Description) 80 }}</p>
+        <a href="/ledgers/{{ .Ledger.ID }}" class="card p-5 hover:shadow-lg hover:border-zinc-300 dark:hover:border-zinc-700 transition group">
+          <div class="space-y-3">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <h3 class="font-semibold text-zinc-900 dark:text-zinc-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{{ .Ledger.Name }}</h3>
+                {{ if nullStringPresent .Ledger.Description }}
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 line-clamp-2">{{ nullStr .Ledger.Description }}</p>
+                {{ end }}
+              </div>
+              <span class="text-base font-bold whitespace-nowrap text-zinc-900 dark:text-zinc-100">{{ money .Total $.CurrencySymbol }}</span>
+            </div>
+
+            {{ if .HasBudget }}
+              <div class="space-y-1.5">
+                <div class="progress-track h-2">
+                  <div class="progress-fill h-2 {{ .StatusClass }}" style="width: {{ if gt .PercentUsed 100 }}100{{ else }}{{ .PercentUsed }}{{ end }}%"></div>
+                </div>
+                <div class="flex justify-between text-[11px] text-zinc-500 dark:text-zinc-400">
+                  <span>{{ .PercentUsed }}% of {{ money .Budget $.CurrencySymbol }}</span>
+                  {{ if gt .PercentUsed 100 }}<span class="text-red-600 dark:text-red-400 font-medium">Over budget</span>{{ end }}
+                </div>
+              </div>
+            {{ else }}
+              <div class="h-2"></div>
+            {{ end }}
+
+            <div class="flex items-center gap-2 pt-1 border-t border-zinc-100 dark:border-zinc-800/50">
+              {{ if eq .Ledger.IsArchived 1 }}
+                <span class="badge !bg-amber-50 !text-amber-700 dark:!bg-amber-950/50 dark:!text-amber-300 !border-amber-200 dark:!border-amber-800 text-[11px]">Archived</span>
+              {{ else }}
+                <span class="badge !bg-emerald-50 !text-emerald-700 dark:!bg-emerald-950/50 dark:!text-emerald-300 !border-emerald-200 dark:!border-emerald-800 text-[11px]">Active</span>
+              {{ end }}
+              {{ if nullIntPresent .Ledger.StartDate }}
+                <span class="text-[11px] text-zinc-400 dark:text-zinc-500 tabular-nums">
+                  {{ formatYMD (nullInt .Ledger.StartDate) $.Owner.Timezone }}
+                  {{ if nullIntPresent .Ledger.EndDate }} → {{ formatYMD (nullInt .Ledger.EndDate) $.Owner.Timezone }}{{ end }}
+                </span>
               {{ end }}
             </div>
-            <span class="text-sm font-semibold whitespace-nowrap">{{ money .Total $.CurrencySymbol }}</span>
           </div>
-          {{ if .HasBudget }}
-            <div class="mt-3 progress-track">
-              <div class="progress-fill {{ .StatusClass }}" style="width: {{ if gt .PercentUsed 100 }}100{{ else }}{{ .PercentUsed }}{{ end }}%"></div>
-            </div>
-            <div class="mt-1 flex justify-between text-xs text-zinc-500 dark:text-zinc-400">
-              <span>{{ .PercentUsed }}% of {{ money .Budget $.CurrencySymbol }}</span>
-              {{ if gt .PercentUsed 100 }}<span class="text-red-600 font-medium">Over</span>{{ end }}
-            </div>
-          {{ end }}
-          {{ if eq .Ledger.IsArchived 1 }}
-            <span class="badge mt-3">Archived</span>
-          {{ end }}
         </a>
       {{ end }}
     </div>
   {{ else }}
-    <div class="card p-12 text-center text-zinc-500 dark:text-zinc-400">
-      {{ if .ShowArchived }}No archived ledgers.{{ else }}No ledgers yet. <a href="/ledgers/new" class="underline">Create one.</a>{{ end }}
+    <div class="card p-16 text-center">
+      <p class="text-zinc-500 dark:text-zinc-400 mb-3">
+        {{ if .ShowArchived }}No archived ledgers.{{ else }}No ledgers yet. Start budgeting for a project or trip.{{ end }}
+      </p>
+      {{ if not .ShowArchived }}
+        <a href="/ledgers/new" class="btn-primary">Create your first ledger</a>
+      {{ end }}
     </div>
   {{ end }}
 </div>

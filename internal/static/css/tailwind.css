@@ -19,14 +19,14 @@
   /* Inputs */
   input, select, textarea {
     @apply w-full rounded-lg
-           border border-zinc-300 dark:border-zinc-800
+           border border-zinc-300 dark:border-zinc-700
            bg-white dark:bg-zinc-900
            px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100
            placeholder:text-zinc-400 dark:placeholder:text-zinc-600
            shadow-sm dark:shadow-none
            transition
            focus:outline-none
-           focus:border-zinc-400 dark:focus:border-zinc-600
+           focus:border-zinc-400 dark:focus:border-zinc-500
            focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20;
   }
   input[type="color"] { @apply p-0.5 cursor-pointer; }
@@ -59,11 +59,11 @@
   }
   .btn-secondary {
     @apply btn
-           border border-zinc-200 dark:border-zinc-800
+           border border-zinc-300 dark:border-zinc-700
            bg-white dark:bg-zinc-900
            text-zinc-700 dark:text-zinc-200
            hover:bg-zinc-50 dark:hover:bg-zinc-800/60
-           hover:border-zinc-300 dark:hover:border-zinc-700
+           hover:border-zinc-400 dark:hover:border-zinc-600
            focus:ring-zinc-400/30 dark:focus:ring-zinc-600/30;
   }
   .btn-danger {
@@ -79,9 +79,8 @@
   /* ─── Cards ──────────────────────────────────────────────── */
   .card {
     @apply rounded-xl bg-white dark:bg-zinc-900
-           border border-zinc-200 dark:border-zinc-800
-           shadow-[0_1px_2px_rgba(0,0,0,0.04)]
-           dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)];
+           border border-zinc-300 dark:border-zinc-700
+           shadow-sm;
   }
 
   .stat {
@@ -113,11 +112,11 @@
   .table-th {
     @apply px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider
            text-zinc-500 dark:text-zinc-400
-           border-b border-zinc-200 dark:border-zinc-800;
+           border-b border-zinc-300 dark:border-zinc-700;
   }
   .table-td {
     @apply px-3 py-2.5 text-sm
-           border-b border-zinc-100 dark:border-zinc-800/50;
+           border-b border-zinc-200 dark:border-zinc-700/50;
   }
 
   /* ─── Badges ─────────────────────────────────────────────── */
@@ -231,7 +230,7 @@
   }
   .combobox-trigger {
     @apply w-full rounded-lg
-           border border-zinc-300 dark:border-zinc-800
+           border border-zinc-300 dark:border-zinc-700
            bg-white dark:bg-zinc-900
            px-3 py-2 text-sm text-left
            flex items-center justify-between gap-2
@@ -239,7 +238,7 @@
            shadow-sm dark:shadow-none
            transition cursor-pointer
            focus:outline-none
-           focus:border-zinc-400 dark:focus:border-zinc-600
+           focus:border-zinc-400 dark:focus:border-zinc-500
            focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20;
   }
   .combobox-trigger[aria-expanded="true"] {
@@ -296,5 +295,20 @@
   }
   .combobox-empty {
     @apply px-3 py-6 text-center text-sm text-zinc-500 dark:text-zinc-500;
+  }
+
+  /* ─── Filter badges ─────────────────────────────────────── */
+  .filter-badge {
+    @apply inline-flex items-center gap-1 rounded-full
+           bg-zinc-100 dark:bg-zinc-800
+           text-xs text-zinc-700 dark:text-zinc-300
+           px-2.5 py-1 font-medium;
+  }
+  .filter-badge-x {
+    @apply inline-flex items-center justify-center
+           w-4 h-4 rounded-full
+           text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-100
+           hover:bg-zinc-200 dark:hover:bg-zinc-700
+           ml-0.5 -mr-1 text-sm leading-none;
   }
 }

@@ -62,15 +62,35 @@ func ParseAmount(s string) (int64, error) {
 	}
 }
 
-// FormatAmount renders cents as a major-unit decimal string with two places,
-// e.g. 1250 → "12.50". It does not include a currency symbol.
+// FormatAmount renders cents as a major-unit decimal string with two places
+// and thousands separators, e.g. 125000 → "1,250.00". It does not include a
+// currency symbol.
 func FormatAmount(cents int64) string {
 	neg := ""
 	if cents < 0 {
 		neg = "-"
 		cents = -cents
 	}
-	return fmt.Sprintf("%s%d.%02d", neg, cents/100, cents%100)
+	major := cents / 100
+	minor := cents % 100
+	return fmt.Sprintf("%s%s.%02d", neg, formatInt(major), minor)
+}
+
+func formatInt(n int64) string {
+	s := strconv.FormatInt(n, 10)
+	if len(s) <= 3 || n < 0 {
+		return s
+	}
+	var parts []string
+	for len(s) > 3 {
+		parts = append(parts, s[len(s)-3:])
+		s = s[:len(s)-3]
+	}
+	parts = append(parts, s)
+	for i, j := 0, len(parts)-1; i < j; i, j = i+1, j-1 {
+		parts[i], parts[j] = parts[j], parts[i]
+	}
+	return strings.Join(parts, ",")
 }
 
 // FormatMoney renders cents with a leading currency symbol, e.g. "$12.50".

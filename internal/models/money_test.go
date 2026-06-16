@@ -50,8 +50,9 @@ func TestFormatAmount(t *testing.T) {
 		{5, "0.05"},
 		{50, "0.50"},
 		{1250, "12.50"},
-		{100000, "1000.00"},
+		{100000, "1,000.00"},
 		{-1250, "-12.50"},
+		{123456700, "1,234,567.00"},
 	}
 	for _, c := range cases {
 		assert.Equal(t, c.want, FormatAmount(c.cents))
@@ -60,13 +61,22 @@ func TestFormatAmount(t *testing.T) {
 
 func TestFormatMoney(t *testing.T) {
 	assert.Equal(t, "$12.50", FormatMoney(1250, "$"))
-	assert.Equal(t, "₦1000.00", FormatMoney(100000, "₦"))
+	assert.Equal(t, "₦1,000.00", FormatMoney(100000, "₦"))
 }
 
 func TestRoundTrip(t *testing.T) {
-	for _, s := range []string{"0.01", "1.99", "100.00", "12345.67"} {
-		c, err := ParseAmount(s)
+	cases := []struct {
+		input string
+		want  string
+	}{
+		{"0.01", "0.01"},
+		{"1.99", "1.99"},
+		{"100.00", "100.00"},
+		{"12345.67", "12,345.67"},
+	}
+	for _, c := range cases {
+		n, err := ParseAmount(c.input)
 		require.NoError(t, err)
-		assert.Equal(t, s, FormatAmount(c), "round-trip %s", s)
+		assert.Equal(t, c.want, FormatAmount(n), "round-trip %s", c.input)
 	}
 }

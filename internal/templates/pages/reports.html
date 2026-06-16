@@ -12,16 +12,25 @@
     <a href="/export/csv?from={{ .From }}&to={{ .To }}" class="btn-secondary">Export CSV</a>
   </header>
 
-  <form class="card p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 items-end" method="get">
-    <div>
-      <label>From</label>
-      <input type="date" name="from" value="{{ .From }}">
+  <form class="card p-4 space-y-3" method="get">
+    <div class="flex flex-wrap gap-2">
+      <button type="button" class="btn-secondary text-xs !px-2.5 !py-1.5" onclick="setReportPreset('7d')">Last 7 days</button>
+      <button type="button" class="btn-secondary text-xs !px-2.5 !py-1.5" onclick="setReportPreset('30d')">Last 30 days</button>
+      <button type="button" class="btn-secondary text-xs !px-2.5 !py-1.5" onclick="setReportPreset('month')">This month</button>
+      <button type="button" class="btn-secondary text-xs !px-2.5 !py-1.5" onclick="setReportPreset('year')">This year</button>
+      <button type="button" class="btn-secondary text-xs !px-2.5 !py-1.5" onclick="setReportPreset('all')">All time</button>
     </div>
-    <div>
-      <label>To</label>
-      <input type="date" name="to" value="{{ .To }}">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+      <div>
+        <label>From</label>
+        <input type="date" name="from" value="{{ .From }}">
+      </div>
+      <div>
+        <label>To</label>
+        <input type="date" name="to" value="{{ .To }}">
+      </div>
+      <button type="submit" class="btn-primary">Apply</button>
     </div>
-    <button type="submit" class="btn-primary">Apply</button>
   </form>
 
   <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -101,6 +110,37 @@
 </div>
 
 <script>
+  function setReportPreset(preset) {
+    var from = document.querySelector('[name="from"]');
+    var to   = document.querySelector('[name="to"]');
+    if (!from || !to) return;
+    var today = new Date();
+    var fmt = function(d) { return d.toISOString().slice(0,10); };
+    var fDate = new Date(today);
+    var tDate = new Date(today);
+
+    switch (preset) {
+      case '7d':
+        fDate.setDate(today.getDate() - 7);
+        break;
+      case '30d':
+        fDate.setDate(today.getDate() - 30);
+        break;
+      case 'month':
+        fDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        break;
+      case 'year':
+        fDate = new Date(today.getFullYear(), 0, 1);
+        break;
+      case 'all':
+        fDate = new Date(2000, 0, 1);
+        break;
+    }
+    from.value = fmt(fDate);
+    to.value = fmt(tDate);
+    from.closest('form').submit();
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     if (typeof Chart === 'undefined') return;
     function pie(id, data, fallbackColor) {

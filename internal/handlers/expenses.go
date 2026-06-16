@@ -61,21 +61,69 @@ func (h *Handler) Expenses(w http.ResponseWriter, r *http.Request) {
 		totalPages = 1
 	}
 
+	filtersActive := 0
+	if formData.From != "" || formData.To != "" || formData.LedgerID != "" ||
+		formData.CategoryID != "" || formData.MinAmount != "" || formData.MaxAmount != "" {
+		if formData.From != "" {
+			filtersActive++
+		}
+		if formData.To != "" {
+			filtersActive++
+		}
+		if formData.LedgerID != "" {
+			filtersActive++
+		}
+		if formData.CategoryID != "" {
+			filtersActive++
+		}
+		if formData.MinAmount != "" {
+			filtersActive++
+		}
+		if formData.MaxAmount != "" {
+			filtersActive++
+		}
+	}
+
+	activeLedgerName := ""
+	if formData.LedgerID != "" && formData.LedgerID != "none" {
+		for _, l := range leds {
+			if strconv.FormatInt(l.ID, 10) == formData.LedgerID {
+				activeLedgerName = l.Name
+				break
+			}
+		}
+	}
+	activeCategoryName := ""
+	if formData.CategoryID != "" && formData.CategoryID != "none" {
+		for _, c := range cats {
+			if strconv.FormatInt(c.ID, 10) == formData.CategoryID {
+				activeCategoryName = c.Name
+				break
+			}
+		}
+	}
+
+	pageNums := pageNumbers(page, totalPages)
+
 	data := map[string]any{
-		"Rows":        rows,
-		"Total":       total,
-		"Sum":         sum,
-		"Categories":  cats,
-		"Ledgers":     leds,
-		"Form":        formData,
-		"FilterError": filterErr,
-		"Page":        page,
-		"TotalPages":  totalPages,
-		"HasPrev":     page > 1,
-		"HasNext":     page < totalPages,
-		"PrevPage":    page - 1,
-		"NextPage":    page + 1,
-		"QueryString": filterQueryString(formData),
+		"Rows":               rows,
+		"Total":              total,
+		"Sum":                sum,
+		"Categories":         cats,
+		"Ledgers":            leds,
+		"Form":               formData,
+		"FilterError":        filterErr,
+		"FiltersActive":      filtersActive,
+		"ActiveLedgerName":   activeLedgerName,
+		"ActiveCategoryName": activeCategoryName,
+		"Page":               page,
+		"TotalPages":         totalPages,
+		"Pages":              pageNums,
+		"HasPrev":            page > 1,
+		"HasNext":            page < totalPages,
+		"PrevPage":           page - 1,
+		"NextPage":           page + 1,
+		"QueryString":        filterQueryString(formData),
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
@@ -438,4 +486,34 @@ func filterQueryString(f expenseFilterForm) string {
 
 func urlEscape(s string) string {
 	return url.QueryEscape(s)
+}
+
+func pageNumbers(current, total int) []int {
+	if total <= 7 {
+		pages := make([]int, total)
+		for i := range pages {
+			pages[i] = i + 1
+		}
+		return pages
+	}
+	pages := []int{1}
+	if current > 4 {
+		pages = append(pages, -1) // ellipsis sentinel
+	}
+	start := current - 2
+	if start < 2 {
+		start = 2
+	}
+	end := current + 2
+	if end > total-1 {
+		end = total - 1
+	}
+	for i := start; i <= end; i++ {
+		pages = append(pages, i)
+	}
+	if current < total-3 {
+		pages = append(pages, -1) // ellipsis sentinel
+	}
+	pages = append(pages, total)
+	return pages
 }

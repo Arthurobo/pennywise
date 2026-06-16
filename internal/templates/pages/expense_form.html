@@ -85,14 +85,14 @@
     <div class="flex items-center justify-between pt-2">
       <a href="/expenses" class="nav-link">Cancel</a>
       <div class="flex gap-2">
+        <button type="submit" class="btn-primary">
+          {{ if eq .Mode "edit" }}Save{{ else }}Create{{ end }}
+        </button>
         {{ if eq .Mode "edit" }}
           <button type="submit" name="_method" value="DELETE"
                   class="btn-danger"
                   data-confirm="Delete this expense? It will go to the trash and you can restore it from there.">Delete</button>
         {{ end }}
-        <button type="submit" class="btn-primary">
-          {{ if eq .Mode "edit" }}Save{{ else }}Create{{ end }}
-        </button>
       </div>
     </div>
   </form>
