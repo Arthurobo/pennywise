@@ -131,9 +131,15 @@
     <h2 class="font-semibold">Data</h2>
     <p class="text-sm text-zinc-500 dark:text-zinc-400">
       Database file: <code class="text-xs">{{ index .BuildInfo "DBPath" }}</code>
-      — back it up by copying it.
     </p>
-    <a href="/export/csv" class="btn-secondary inline-block">Export all expenses (CSV)</a>
+    <div class="flex flex-wrap gap-2">
+      <a href="/export/csv" class="btn-secondary inline-block">Export all expenses (CSV)</a>
+      <a href="/settings/export-db" class="btn-secondary inline-block">Download backup (.zip)</a>
+    </div>
+    <p class="text-xs text-zinc-500 dark:text-zinc-400">
+      Contains database + session secret. Use
+      <code class="text-xs">pennywise restore &lt;file.zip&gt;</code> to restore on a new machine.
+    </p>
   </section>
 
   <section class="card p-6 space-y-2 text-sm text-zinc-500 dark:text-zinc-400">

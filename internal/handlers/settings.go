@@ -2,13 +2,16 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/mail"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/Arthurobo/pennywise/internal/auth"
+	pwdb "github.com/Arthurobo/pennywise/internal/db"
 	sqlcgen "github.com/Arthurobo/pennywise/internal/db/sqlc"
 	"github.com/Arthurobo/pennywise/internal/models"
 )
@@ -178,4 +181,46 @@ func normalizeDashboardURL(raw string) (string, error) {
 	u.RawQuery = ""
 	u.Fragment = ""
 	return u.String(), nil
+}
+
+// ExportDB GET /settings/export-db — streams a full database + secret key
+// backup as a downloadable .zip file. Uses SQLite's VACUUM INTO to create a
+// consistent snapshot even while the server is handling other requests.
+func (h *Handler) ExportDB(w http.ResponseWriter, r *http.Request) {
+	owner := auth.OwnerFromContext(r.Context())
+	loc := models.LoadLocation(owner.Timezone)
+
+	filename := "pennywise-backup-" + time.Now().In(loc).Format("2006-01-02") + ".zip"
+
+	tmp, err := os.CreateTemp("", "pennywise-backup-*.zip")
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	tmpPath := tmp.Name()
+	tmp.Close()
+	defer os.Remove(tmpPath)
+
+	if err := pwdb.Archive(h.Cfg.DBPath(), h.Cfg.SecretPath(), tmpPath); err != nil {
+		serverError(w, err)
+		return
+	}
+
+	f, err := os.Open(tmpPath)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	defer f.Close()
+
+	info, err := f.Stat()
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/zip")
+	w.Header().Set("Content-Disposition", `attachment; filename="`+filename+`"`)
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", info.Size()))
+	http.ServeContent(w, r, filename, info.ModTime(), f)
 }

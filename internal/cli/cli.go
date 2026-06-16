@@ -49,6 +49,8 @@ func Execute() error {
 		newUpdateCommand(),
 		newUninstallCommand(),
 		&cobra.Command{Use: "reset-password", Short: "Reset the owner password", RunE: runResetPassword},
+		newBackupCommand(),
+		newRestoreCommand(),
 	)
 
 	return root.Execute()
@@ -161,6 +163,8 @@ func ExecuteWithContext(ctx context.Context) error {
 		newUpdateCommand(),
 		newUninstallCommand(),
 		&cobra.Command{Use: "reset-password", Short: "Reset the owner password", RunE: runResetPassword},
+		newBackupCommand(),
+		newRestoreCommand(),
 	)
 	return cmd.ExecuteContext(ctx)
 }

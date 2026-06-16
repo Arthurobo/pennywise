@@ -19,8 +19,9 @@ one SQLite file you can copy. No external services. No accounts somewhere else.
 
 ## Why Pennywise
 
-- **Local-first.** All data lives in one SQLite file you control. Back it up by
-  copying it. Move installs by copying it. Inspect it with `sqlite3` whenever.
+- **Local-first.** All data lives in one SQLite file you control. Back it up
+  with `pennywise backup`. Restore on a new machine with `pennywise restore`.
+  Inspect it with `sqlite3` whenever.
 - **Self-hosted, single-tenant.** No accounts on someone else's server, no
   subscriptions. One owner per install.
 - **One binary, no runtime.** Pure-Go SQLite, embedded templates and assets.
@@ -139,6 +140,8 @@ pennywise start            # install service + start; survives reboot
 pennywise stop             # stop and remove from auto-start
 pennywise status           # installed? running? PID, dashboard URL, logs
 
+pennywise backup           # export database + secret key to a .zip archive
+pennywise restore <file>   # restore from a .zip backup archive
 pennywise update           # `go install` latest + restart service to use it
 pennywise uninstall        # permanently remove Pennywise (service + data + binary)
 pennywise reset-password   # reset the owner password (revokes sessions)
@@ -156,15 +159,21 @@ separate `migrate` command; you never need to think about schema versions.
 
 ## Backup & restore
 
-Everything is in `$PENNYWISE_DATA_DIR/pennywise.db`. To back up:
+Pennywise bundles your database and session secret into a single `.zip` archive:
 
 ```sh
-# Stop the server first for a perfectly consistent snapshot.
-cp ~/.pennywise/pennywise.db ~/backups/pennywise-$(date +%F).db
+pennywise backup              # prompts for path, defaults to ~/Desktop/*.zip
+pennywise restore <file.zip>  # stops server, replaces DB + secret, safety copy kept
 ```
 
-WAL mode is on, so the DB survives `kill -9` mid-write. See
-[`docs/backup-and-restore.md`](docs/backup-and-restore.md) for hot-backup.
+The archive contains `pennywise.db` and `secret.key`. Restoring it on a new
+machine transfers your data **and** your Telegram/LLM configuration — no re-setup
+needed. The old database and secret are saved as `.pre-restore-*` safety copies.
+
+You can also download a backup directly from the web UI at **Settings → Data**.
+
+The backup works while the server is running (SQLite `VACUUM INTO` snapshot).
+You don't need to stop Pennywise first.
 
 ## Documentation
 

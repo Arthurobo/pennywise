@@ -82,6 +82,7 @@ func Mount(h *handlers.Handler) http.Handler {
 		// Reports + export
 		r.Get("/reports", h.Reports)
 		r.Get("/export/csv", h.ExportCSV)
+		r.Get("/settings/export-db", h.ExportDB)
 
 		// Settings
 		r.Get("/settings", h.Settings)
