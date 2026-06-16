@@ -197,7 +197,7 @@ func openForBackup(path string) (*sql.DB, error) {
 }
 
 func openForValidate(path string) (*sql.DB, error) {
-	dsn := fmt.Sprintf("file:%s?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&mode=ro", path)
+	dsn := fmt.Sprintf("file:%s?mode=ro", path)
 	conn, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("open: %w", err)
@@ -221,7 +221,11 @@ func extractZipFile(f *zip.File, dst string) error {
 	if err := os.MkdirAll(filepath.Dir(dst), 0o750); err != nil {
 		return err
 	}
-	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+	mode := f.Mode()
+	if mode&0o444 == 0 {
+		mode |= 0o600 // ensure owner read+write at minimum
+	}
+	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
 	if err != nil {
 		return err
 	}
