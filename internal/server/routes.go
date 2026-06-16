@@ -76,6 +76,7 @@ func Mount(h *handlers.Handler) http.Handler {
 		r.Get("/ledgers/{id}", h.LedgerDetail)
 		r.Get("/ledgers/{id}/edit", h.EditLedgerForm)
 		r.Post("/ledgers/{id}", h.UpdateLedger)
+		r.Get("/ledgers/{id}/export/csv", h.ExportLedgerCSV)
 		r.Post("/ledgers/{id}/archive", h.ArchiveLedger)
 		r.Delete("/ledgers/{id}", h.DeleteLedger)
 

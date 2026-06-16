@@ -24,6 +24,7 @@
     </div>
     <div class="flex gap-2">
       <a href="/expenses/new?ledger={{ .L.Ledger.ID }}" class="btn-primary text-sm">+ Add expense</a>
+      <a href="/ledgers/{{ .L.Ledger.ID }}/export/csv" class="btn-secondary text-sm">Export CSV</a>
       <a href="/ledgers/{{ .L.Ledger.ID }}/edit" class="btn-secondary text-sm">Edit</a>
     </div>
   </header>
