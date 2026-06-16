@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/Arthurobo/pennywise/internal/config"
 )
@@ -73,12 +74,21 @@ func (s *darwinService) Install(cfg config.Config, binPath string) error {
 		if !isAlreadyLoaded(out) {
 			return fmt.Errorf("launchctl bootstrap: %w (%s)", err, strings.TrimSpace(out))
 		}
-		// Tear down the stale service. Errors here are non-fatal —
-		// what matters is the next bootstrap succeeding.
+		// Tear down the stale service, then re-bootstrap with a short
+		// backoff. launchd can report the service as "already loaded"
+		// for a beat after bootout — retry a few times so `update` and
+		// `start` don't flake on timing.
 		_, _ = runLaunchctl("bootout", s.unitTarget())
-		if out2, err2 := runLaunchctl("bootstrap", target, s.plistPath); err2 != nil {
-			return fmt.Errorf("re-bootstrap after bootout: %w (%s)", err2, strings.TrimSpace(out2))
+		var lastErr error
+		for range 5 {
+			time.Sleep(200 * time.Millisecond)
+			if out2, err2 := runLaunchctl("bootstrap", target, s.plistPath); err2 == nil {
+				return nil
+			} else {
+				lastErr = fmt.Errorf("re-bootstrap after bootout: %w (%s)", err2, strings.TrimSpace(out2))
+			}
 		}
+		return lastErr
 	}
 	return nil
 }
